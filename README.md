@@ -1,6 +1,6 @@
 # mike
 
-Mike is calico, one of cat apecies, in Japanese.
+Mike is calico cat called in Japanese.
 
 This component is debeloped for n0stack networking.
 All packets are processed by OpenFlow with Ryu SDN.
