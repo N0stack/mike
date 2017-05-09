@@ -81,7 +81,7 @@ class ModelSwitchLink(models.Model):
     '''
     name = models.CharField(len=32)
     number = models.IntegerField(null=False)
-    counter_link = models.OneToOneField(self)
+    next_link = models.OneToOneField(self)
     switch = models.ForeignKey(ModelSwitch, related_name="switch_links")
 
 
