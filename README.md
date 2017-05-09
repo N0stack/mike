@@ -7,7 +7,7 @@ All packets are processed by OpenFlow with Ryu SDN.
 
 ## Flow Model
 
-![](doc/flow.svg)
+![](doc/flow.png)
 
 Packets are started from red round node.
 
