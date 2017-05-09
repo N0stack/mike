@@ -4,7 +4,7 @@ from django.db import models
 # class ModelNetwork(models.Model):
 #     '''
 #     {
-#         id: integer,
+#         id: UUID,
 #         name: string,
 #         serivce: reference
 #         network_group_id: reference,  # stay
@@ -32,7 +32,7 @@ from django.db import models
 class ModelSwitch(models.Model):
     '''
     {
-        id: integer,
+        id: UUID,
         name: string,
         host_id: reference uuid,
         internal: boolean,
@@ -49,8 +49,9 @@ class ModelSwitch(models.Model):
 class ModelPort(models.Model):
     '''
     {
-        id: integer,
+        id: UUID,
         name: string,
+        number: integer,
         network: reference,
         switch: reference,
         mac_addr: string,
@@ -59,6 +60,7 @@ class ModelPort(models.Model):
     }
     '''
     uuid = models.UUIDField(auto=True, primary_key=True, editable=False)
+    number = models.IntegerField(null=False)
     name = models.CharField(len=32)
     # network = models.ForeignKey(ModelNetwork, related_name="ports")
     switch = models.ForeignKey(ModelSwitch, related_name="ports")
@@ -71,12 +73,14 @@ class ModelSwitchLink(models.Model):
     '''
     {
         id: integer,
-        name: string
+        name: string,
+        number: integer,
         counter_link: reference,
         switch: reference,
     }
     '''
     name = models.CharField(len=32)
+    number = models.IntegerField(null=False)
     counter_link = models.OneToOneField(self)
     switch = models.ForeignKey(ModelSwitch, related_name="switch_links")
 
