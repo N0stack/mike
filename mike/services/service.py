@@ -36,6 +36,20 @@ class Service(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def add_switch(self, switch):
+        '''
+        add switch
+        '''
+        pass
+
+    @abstractmethod
+    def delete_switch(self, switch):
+        '''
+        delete switch
+        '''
+        pass
+
+    @abstractmethod
     def packet_in(self, event):
         '''
         this method called when packet in
