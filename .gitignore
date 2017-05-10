@@ -91,3 +91,6 @@ ENV/
 # vscode
 .vscode
 .mypy_cache
+
+# coverage report
+cover/
