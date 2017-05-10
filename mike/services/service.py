@@ -1,5 +1,3 @@
-from ryu.base import app_manager
-from ryu.ofproto import ofproto_v1_3
 from abc import ABCMeta, abstractmethod
 
 
