@@ -41,7 +41,7 @@ class Hub(Service):
         )
         if q:
             # logger.warn("the object(" + port.id + ") already exists on mac address table of Hub service(" + self.uuid + ")")
-            raise ExceptionAlreadyExists(port, self)
+            raise ExceptionAlreadyExists(q[0], port, self)
 
         self._learn_mac_address(port)
 
@@ -61,9 +61,9 @@ class Hub(Service):
                 self._send_flow(port.switch.datapath, match, actions)
             else:
                 in_link = ModelSwitchLink.objects.all().filter(
-                    switch=port.switch
+                    switch__uuid=port.switch.uuid
                 ).filter(
-                    next_link=dst_port.switch
+                    next_link__uuid=dst_port.switch.uuid
                 )[0]
 
                 datapath = get_datapath(self._ryu_app,
@@ -120,6 +120,7 @@ class Hub(Service):
                                          match=match,
                                          instructions=instruction)
         datapath.send_msg(flow_mod)
+
 
 class ModelServiceHubTable(models.Model):
     hub_uuid = models.UUIDField(editable=False, null=False)
