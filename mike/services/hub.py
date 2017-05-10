@@ -1,5 +1,6 @@
 from mike.services.service import Service
 from mike.models import ModelPort, ModelSwitchLink
+from mike.exceptions import ExceptionAlreadyExists
 
 
 from ryu.app.ofctl.api import get_datapath
@@ -14,6 +15,14 @@ SERVICE_HUB_PRIORITY = 55000  # Layer 2
 class Hub(Service):
     '''
     simple switching hub
+
+    support:
+      - internal to internal
+      - internal to external
+      - external to internal
+      - internal to internal of otherhost (tunneling)
+    not support:
+      - external to external
     '''
 
     def __init__(self, ryu_app, uuid=None):
@@ -25,6 +34,15 @@ class Hub(Service):
         # self.logger = logger
 
     def add_port(self, port):
+        q = ModelServiceHubTable.objects.all().filter(
+            hub=self.uuid
+        ).filter(
+            sport=port
+        )
+        if q:
+            # logger.warn("the object(" + port.id + ") already exists on mac address table of Hub service(" + self.uuid + ")")
+            raise ExceptionAlreadyExists(port, self)
+
         self._learn_mac_address(port)
 
         ports = ModelServiceHubTable.objects.all().filter(hub_uuid=self.uuid)
@@ -75,20 +93,14 @@ class Hub(Service):
         '''
         learning mac address
         '''
-        q = ModelServiceHubTable.objects.all().filter(
-            hub=self.uuid
-        ).filter(
-            sport=port
-        )
-        if not q:
-            new_query = ModelServiceHubTable(hub=self.uuid,
-                                             port=port)
-            new_query.save()
-            # self.logger.info("[add mac table] dpid: %s, src_address: %s, inport: %s service: %s",
-            #                  port.switch.dpid,
-            #                  port.mac_address,
-            #                  port.name,
-            #                  self.uuid)
+        new_query = ModelServiceHubTable(hub=self.uuid,
+                                         port=port)
+        new_query.save()
+        # self.logger.info("[add mac table] dpid: %s, src_address: %s, inport: %s service: %s",
+        #                  port.switch.dpid,
+        #                  port.mac_address,
+        #                  port.name,
+        #                  self.uuid)
 
     def _send_flow(self, datapath, match, actions, buffer_id=None):
         ofproto = datapath.ofproto
