@@ -106,7 +106,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ja-jp'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tokyo'
 
 USE_I18N = True
 
@@ -123,9 +123,14 @@ STATIC_URL = '/static/'
 
 # nose test
 INSTALLED_APPS += ('django_nose',)
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner' 
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 NOSE_ARGS = [
     '--with-coverage',
     '--cover-html',
+    '--cover-html-dir=' + BASE_DIR + "/tests/cover",
+    '--cover-branches',
+    '--cover-inclusive',
+    '--cover-erase',
     '--cover-package=mike',
+    '--verbosity=3'
 ]
