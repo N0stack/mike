@@ -14,6 +14,8 @@ class N0stackObject(metaclass=ABCMeta):
     def add(cls, *args, **kwargs):
         '''
         add new the object
+        thinking now about create fact objects, switches and port, on host
+        now, do not create
         '''
         pass
 
