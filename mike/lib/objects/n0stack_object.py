@@ -7,7 +7,7 @@ class N0stackObject(metaclass=ABCMeta):
     object_model must be overrided with django ORM model
     '''
 
-    object_model = None
+    model = None
 
     @classmethod
     @abstractmethod
@@ -24,7 +24,7 @@ class N0stackObject(metaclass=ABCMeta):
         prams (uuid: array)
         return queries: array
         '''
-        cls.object_model.objects.filter(
+        cls.model.objects.filter(
             uuid__in=uuids
         )[0].delete()
 
@@ -35,6 +35,6 @@ class N0stackObject(metaclass=ABCMeta):
         prams uuid: array
         return queries: array
         '''
-        return cls.object_model.objects.filter(
+        return cls.model.objects.filter(
             uuid__in=uuids
         )

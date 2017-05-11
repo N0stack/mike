@@ -7,7 +7,7 @@ class Switches(N0stackObject):
     switch tool kits for mike base system
     '''
 
-    object_model = ModelSwitch
+    model = ModelSwitch
 
     @classmethod
     def add(cls, name, host_id, datapath_id, internal=True):
