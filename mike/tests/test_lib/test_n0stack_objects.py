@@ -27,6 +27,7 @@ class TestSwitches(TestCase):
                                   datapath_id=2))
         eq_(len(Switches.get_from_uuids(uuids)), 2)
         Switches.delete([uuids[0]])
+        eq_(len(Switches.get_from_uuids(uuids)), 1)
 
         r = Switches.get_from_uuids(uuids)[0]
         eq_(r.name, "test_sw2")
