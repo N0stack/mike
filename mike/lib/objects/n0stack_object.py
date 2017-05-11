@@ -24,7 +24,7 @@ class N0stackObject(metaclass=ABCMeta):
         prams (uuid: array)
         return queries: array
         '''
-        cls.object_model.objects.all().filter(
+        cls.object_model.objects.filter(
             uuid__in=uuids
         )[0].delete()
 
@@ -35,7 +35,6 @@ class N0stackObject(metaclass=ABCMeta):
         prams uuid: array
         return queries: array
         '''
-        return cls.object_model.objects.all().filter(
+        return cls.object_model.objects.filter(
             uuid__in=uuids
         )
-
