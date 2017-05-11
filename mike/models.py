@@ -40,10 +40,10 @@ class ModelSwitch(models.Model):
         datapath_id: integer,
     }
     '''
-    uuid = models.UUIDField(primary_key=True, default=uuid4(), editable=False)
+    uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=32, null=False)
     host_id = models.UUIDField(null=False, editable=False)
-    internal = models.BooleanField(null=False, editable=False, default=True)
+    internal = models.BooleanField(null=False, editable=False)
     datapath_id = models.IntegerField(null=False)  # editable?
 
     class Meta:
@@ -67,7 +67,7 @@ class ModelPort(models.Model):
         ipv4_subnet_mask: integer,
     }
     '''
-    uuid = models.UUIDField(primary_key=True, default=uuid4(), editable=False)
+    uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     number = models.IntegerField(null=False)
     name = models.CharField(max_length=32)
     # network = models.ForeignKey(ModelNetwork, related_name="ports")
@@ -93,7 +93,7 @@ class ModelSwitchLink(models.Model):
         switch: reference,
     }
     '''
-    uuid = models.UUIDField(primary_key=True, default=uuid4(), editable=False)
+    uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=32)
     number = models.IntegerField(null=False)
     next_link = models.OneToOneField('self')
