@@ -1,5 +1,5 @@
 [run]
-omit = */tests/*
+omit = */tests/*, mike/urls.py, mike/wsgi.py
 
 [html]
-directory = mike/tests/cover
+directory = cover

@@ -125,12 +125,10 @@ STATIC_URL = '/static/'
 INSTALLED_APPS += ('django_nose',)
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 NOSE_ARGS = [
-    '--with-coverage',
-    '--cover-html',
-    '--cover-html-dir=' + BASE_DIR + "/tests/cover",
-    '--cover-branches',
-    '--cover-inclusive',
-    '--cover-erase',
-    '--cover-package=mike',
+    # '--with-coverage',
+    # '--cover-branches',
+    # '--cover-inclusive',
+    # '--cover-erase',
+    # '--cover-package=mike',
     '--verbosity=3'
 ]
