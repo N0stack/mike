@@ -150,7 +150,6 @@ class TestPorts(TestCase):
         Ports.delete(del_p)
         eq_(len(Ports.get_from_uuids(ports_uuids)), 1)
 
-
     @raises(IntegrityError)
     def test_add_exists_ports(self):
         Ports.add(number=1,
