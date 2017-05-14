@@ -13,9 +13,15 @@ class N0stackObject(metaclass=ABCMeta):
     @abstractmethod
     def add(cls, *args, **kwargs):
         '''
-        add new the object
-        thinking now about create fact objects, switches and port, on host
-        now, do not create
+        register object to mike base system
+        '''
+        pass
+
+    @classmethod
+    @abstractmethod
+    def create(cls, *args, **kwargs):
+        '''
+        create object and add the object to mike base system
         '''
         pass
 
