@@ -12,6 +12,15 @@ import logger
 SERVICE_HUB_PRIORITY = 55000  # Layer 2
 
 
+class ModelServiceHubTable(models.Model):
+    hub = models.UUIDField(editable=False, null=False)
+    port = models.ForeignKey(ModelPort, related_name="service_hub_table", null=False)
+
+    class Meta:
+        unique_together = (('hub', 'port'))
+        app_label = 'mike'
+
+
 class Hub(Service):
     '''
     simple switching hub
@@ -33,38 +42,37 @@ class Hub(Service):
             self.uuid = uuid4
         # self.logger = logger
 
-    def add_port(self, port):
-        q = ModelServiceHubTable.objects.all().filter(
-            hub=self.uuid
-        ).filter(
-            sport=port
-        )
-        if q:
-            # logger.warn("the object(" + port.id + ") already exists on mac address table of Hub service(" + self.uuid + ")")
-            raise ExceptionAlreadyExists(q[0], port, self)
+    def generate_flow(self, port):
+        flows = {}
+        if port.switch.type in 'in':
+            _generate_internal_flow(port)
+        else:
+            _generate_external_flow(port)
 
-        self._learn_mac_address(port)
-
-        ports = ModelServiceHubTable.objects.all().filter(hub_uuid=self.uuid)
+    def _generate_internal_flow(self, port):
+        ports = ModelServiceHubTable.objects.all().filter(hub=self.uuid)
         for dst_port in ports:
             if not port.switch.host_id == dst_port.switch.host_id:
                 '''
                 tunneling
                 '''
             if port.switch.datapath_id == dst_port.switch.datapath_id:
+                '''
+                internal to internal
+                '''
                 datapath = get_datapath(self._ryu_app,
                                         port.switch.datapath_id)
                 parser = datapath.ofproto_parser
                 match = parser.OFPMatch(in_port=port.number,
                                         eth_dst=dst_port.mac_address)
                 actions = [parser.OFPActionOutput(dst_port.number)]
-                self._send_flow(port.switch.datapath, match, actions)
+                flows[port.switch.datapath] = (match, actions)
             else:
-                in_link = ModelSwitchLink.objects.all().filter(
-                    switch__uuid=port.switch.uuid
-                ).filter(
-                    next_link__uuid=dst_port.switch.uuid
-                )[0]
+                '''
+                internal to external
+                '''
+                in_link = ModelSwitchLink.objects.all().filter(switch__uuid=port.switch.uuid,
+                                                               next_link__uuid=dst_port.switch.uuid)[0]
 
                 datapath = get_datapath(self._ryu_app,
                                         port.switch.datapath_id)
@@ -72,7 +80,7 @@ class Hub(Service):
                 match = parser.OFPMatch(in_port=port.number,
                                         eth_dst=dst_port.mac_address)
                 actions = [parser.OFPActionOutput(in_link.number)]
-                self._send_flow(port.switch.datapath, match, actions)
+                flows[port.switch.datapath] = (match, actions)
 
                 # secondary switch
                 datapath = get_datapath(self._ryu_app,
@@ -81,7 +89,19 @@ class Hub(Service):
                 match = parser.OFPMatch(in_port=in_link.next_link.number,
                                         eth_dst=dst_port.mac_address)
                 actions = [parser.OFPActionOutput(dst_port.number)]
-                self._send_flow(datapath, match, actions)
+                flows[datapath] = (match, actions)
+        return flows
+
+    def _generate_external_flow(self, port):
+        ports = ModelServiceHubTable.objects.all().filter(hub=self.uuid)
+        '''
+        external to internal
+        '''
+
+    def add_port(self, port):
+        self._learn_mac_address(port)
+        for k, v in self.generate_flow(port):
+            self._send_flow(k, v[0], v[1])
 
     def delete_port(self, port):
         pass
@@ -120,8 +140,3 @@ class Hub(Service):
                                          match=match,
                                          instructions=instruction)
         datapath.send_msg(flow_mod)
-
-
-class ModelServiceHubTable(models.Model):
-    hub_uuid = models.UUIDField(editable=False, null=False)
-    port = models.ForeignKey(ModelPort, related_name="service_hub_table", null=False)

@@ -20,6 +20,18 @@ class Service(metaclass=ABCMeta):
         self._ryu_app = ryu_app
 
     @abstractmethod
+    def generate_flow(self, *args, **kwargs):
+        '''
+        return {
+            datapath: (
+                match,
+                actions
+            )
+        }
+        '''
+        pass
+
+    @abstractmethod
     def add_port(self, port):
         '''
         add new port
