@@ -4,10 +4,14 @@ from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from hashlib import md5
+import os
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mike.settings")
+django.setup()
 
 from mike.lib.objects.switch import Switch
 from mike.lib.uuid_object import get_object_type
-
 
 class MikeOpenflowController(app_manager.RyuApp):
     '''
@@ -26,7 +30,9 @@ class MikeOpenflowController(app_manager.RyuApp):
 
     @classmethod
     def add_packet_in_hook(cls, uuid):
-        cls.cookies[md5(uuid).digest()] = uuid
+        cookie = md5(uuid).digest()
+        cls.cookies[cookie] = uuid
+        return cookie
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def _switch_features_handler(self, event):
