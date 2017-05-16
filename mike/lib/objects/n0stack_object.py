@@ -1,6 +1,6 @@
 from django.db import models
 
-from mike.lib.uuid_objects import UUIDObject, UUIDObjectType
+from mike.lib.uuid_object import UUIDObject, UUIDObjectType
 
 
 class N0stackObject(models.Model):

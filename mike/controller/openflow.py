@@ -5,8 +5,8 @@ from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from hashlib import md5
 
-from mike.lib.objects.switches import Switch
-from mike.lib.uuid_objects import get_object_type
+from mike.lib.objects.switch import Switch
+from mike.lib.uuid_object import get_object_type
 
 
 class MikeOpenflowController(app_manager.RyuApp):

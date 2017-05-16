@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from mike.lib.objects.n0stack_object import N0stackObject
-from mike.lib.objects.switches import Switch
+from mike.lib.objects.switch import Switch
 
 
 class Port(N0stackObject):
