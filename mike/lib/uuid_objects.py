@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from uuid import uuid4
 
 
-class ModelUUIDObjectType(models.Model):
+class UUIDObjectType(models.Model):
     '''
     {
         "id": integer,
@@ -37,7 +37,7 @@ class ModelUUIDObjectType(models.Model):
         return self.name
 
 
-class ModelUUIDObject(models.Model):
+class UUIDObject(models.Model):
     '''
     {
         "uuid": UUID,
@@ -46,7 +46,7 @@ class ModelUUIDObject(models.Model):
     '''
 
     uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    object_type = models.ForeignKey(ModelUUIDObjectType, related_name="instances", null=False, editable=False)
+    object_type = models.ForeignKey(UUIDObjectType, related_name="instances", null=False, editable=False)
 
     class Meta:
         app_label = 'mike'
@@ -57,6 +57,6 @@ class ModelUUIDObject(models.Model):
 
 def get_object_type(uuid):
     '''
-    return ModelUUIDObjectType
+    return UUIDObjectType
     '''
-    return ModelUUIDObject.objects.filter(uuid=uuid)[0].object_type
+    return UUIDObject.objects.filter(uuid=uuid)[0].object_type

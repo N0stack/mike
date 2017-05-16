@@ -6,7 +6,7 @@ from mike.lib.objects.n0stack_object import N0stackObject
 from mike.lib.objects.switches import ModelSwitch
 
 
-class ModelPort(models.Model):
+class Port(N0stackObject):
     '''
     {
         "uuid": UUID,
@@ -16,7 +16,6 @@ class ModelPort(models.Model):
         "mac_addr": string,
     }
     '''
-    uuid = models.UUIDField(primary_key=True, editable=False)
     number = models.IntegerField(null=False)
     name = models.CharField(max_length=16, default='')
     switch = models.ForeignKey(ModelSwitch, related_name="ports", null=False, editable=False)
@@ -34,36 +33,3 @@ class ModelPort(models.Model):
 
     def __unicode__(self):
         return self.uuid
-
-
-class Ports(N0stackObject):
-    model = ModelPort
-
-    @classmethod
-    def create_object(cls, switch):
-        '''
-        create port to openvswitch
-        return (port_number, port_name)
-        '''
-
-    @classmethod
-    def create(cls, switch, mac_addr):
-        (num, name) = cls.create_object(switch=switch)
-        return cls.add(number=num,
-                       name=name,
-                       switch=switch,
-                       mac_addr=mac_addr)
-
-    @classmethod
-    def add(cls,
-            number,
-            switch,
-            mac_addr,
-            name=''):
-        new_port = ModelPort(number=number,
-                             name=name,
-                             switch=switch,
-                             mac_addr=mac_addr)
-        new_port.save()
-
-        return new_port

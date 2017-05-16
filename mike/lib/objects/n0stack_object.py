@@ -1,44 +1,27 @@
-from abc import ABCMeta, abstractmethod
+from django.db import models
+
+from mike.lib.uuid_objects import UUIDObject, UUIDObjectType
 
 
-class N0stackObject(metaclass=ABCMeta):
+class N0stackObject(models.Model):
     '''
     this is abstract class for n0stack object managed uuid
-    object_model must be overrided with django ORM model
+    uuid will be automaticaly seted
     '''
 
-    model = None
+    uuid = models.UUIDField(primary_key=True, editable=False)
 
-    @classmethod
-    @abstractmethod
-    def add(cls, *args, **kwargs):
-        '''
-        register object to mike base system
-        '''
-        pass
+    class Meta:
+        abstract = True
+        app_label = 'mike'
 
-    @classmethod
-    @abstractmethod
-    def create(cls, *args, **kwargs):
+    def save(self, *args, **kwargs):
         '''
-        create object and add the object to mike base system
+        automatically set uuid and save for UUIDObject
         '''
-        pass
-
-    @classmethod
-    def delete(cls, uuids):
-        '''
-        delete the object for mike base system
-        prams (uuid: array)
-        return queries: array
-        '''
-        cls.model.objects.filter(uuid__in=uuids).delete()
-
-    @classmethod
-    def get_from_uuids(cls, uuids):
-        '''
-        get model from uuids
-        prams uuid: array
-        return queries: array
-        '''
-        return cls.model.objects.filter(uuid__in=uuids)
+        if self.uuid:
+            new_object_type = UUIDObjectType.objects.filter(name=self.__class__.__name__)
+            new_object = UUIDObject(object_type=new_object_type)
+            new_object.save()
+            self.uuid = new_object.uuid
+        super(N0stackObject, self).save(*args, **kwargs)
