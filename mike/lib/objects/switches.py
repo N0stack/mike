@@ -1,4 +1,5 @@
 from mike.lib.objects.n0stack_object import N0stackObject
+from mike.lib.uuid_objects import ModelUUIDObject
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -14,19 +15,21 @@ class ModelSwitch(models.Model):
         host_id: reference uuid,
         internal: boolean,
         datapath_id: integer,
+        reference: manytomany reference,
     }
     '''
-    SWITCH_CHOICES=(
+    SWITCH_TYPES = (
         (u'in', 'internal'),  # openvswitch internal port
         (u'ex', 'external'),  # openvswitch external port
         (u'ph', 'physical'),  # physical switch port
     )
 
-    uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    uuid = models.UUIDField(primary_key=True, editable=False)
     name = models.CharField(max_length=32, null=False)
     host_id = models.UUIDField(null=False, editable=False)
-    type = models.CharField(null=False, editable=False, choices=SWITCH_CHOICES)
+    type = models.CharField(null=False, editable=False, choices=SWITCH_TYPES)
     datapath_id = models.IntegerField(null=False)  # editable?
+    services = models.ManyToManyField(ModelUUIDObject)
 
     class Meta:
         unique_together = (('host_id', 'datapath_id'))
@@ -35,6 +38,7 @@ class ModelSwitch(models.Model):
     def clean(self):
         if self.type is not 'ph' and not self.name:
             raise ValidationError(_('internal openvswitch interface is not seted name'))
+        # checking that service is not n0stack object
 
     def __unicode__(self):
         return self.uuid

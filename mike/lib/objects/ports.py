@@ -4,7 +4,6 @@ from mike.lib.objects.switches import ModelSwitch
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from ryu.lib.ip import valid_ipv4
 from uuid import uuid4
 
 
@@ -14,12 +13,11 @@ class ModelPort(models.Model):
         "id": UUID,
         "name": string,
         "number": integer,
-        "network": reference,
         "switch": reference,
         "mac_addr": string,
     }
     '''
-    uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    uuid = models.UUIDField(primary_key=True, editable=False)
     number = models.IntegerField(null=False)
     name = models.CharField(max_length=32, default='')  # empty means switch is physicaly
     # network = models.ForeignKey(ModelNetwork, related_name="ports") ManyToMany?
