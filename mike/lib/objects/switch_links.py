@@ -18,15 +18,15 @@ class SwitchLink(N0stackObject):
     '''
     name = models.CharField(max_length=32, null=False)
     number = models.IntegerField(null=False)
-    switch1 = models.ForeignKey(Switch, related_name="switch_links", null=False)
-    switch2 = models.ForeignKey(Switch, related_name="switch_links", null=False)
+    switch = models.ForeignKey(Switch, related_name="switch_links", null=False)
+    next_link = models.ForeignKey('self', null=False)
 
     class Meta:
-        unique_together = (('switch1', 'switch2'))
+        unique_together = (('switch', 'next_link'))
         app_label = 'mike'
 
     def clean(self):
-        if self.switch1 is self.switch2:
+        if self.switch is self.next_link.switch:
             raise ValidationError(_('cannot link with same switch'))
 
 

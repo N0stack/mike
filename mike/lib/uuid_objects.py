@@ -19,9 +19,9 @@ class UUIDObjectType(models.Model):
         (u'service', 'service objects'),  # service objects
     )
 
-    name = models.CharField(max_length=32, null=False)
+    name = models.CharField(max_length=16, null=False)
     path = models.CharField(max_length=64, null=False)
-    type = models.CharField(null=False, editable=False, choices=UUID_OBJECT_TYPE)
+    type = models.CharField(max_length=8, null=False, editable=False, choices=UUID_OBJECT_TYPE)
 
     class Meta:
         unique_together = (('name', 'path'))

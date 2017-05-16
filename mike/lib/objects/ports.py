@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from mike.lib.objects.n0stack_object import N0stackObject
-from mike.lib.objects.switches import ModelSwitch
+from mike.lib.objects.switches import Switch
 
 
 class Port(N0stackObject):
@@ -18,7 +18,7 @@ class Port(N0stackObject):
     '''
     number = models.IntegerField(null=False)
     name = models.CharField(max_length=16, default='')
-    switch = models.ForeignKey(ModelSwitch, related_name="ports", null=False, editable=False)
+    switch = models.ForeignKey(Switch, related_name="ports", null=False, editable=False)
     mac_addr = models.CharField(max_length=12, null=True)  # ie. 1a2b3c4d5e6f
 
     class Meta:

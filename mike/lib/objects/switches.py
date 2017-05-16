@@ -25,7 +25,7 @@ class Switch(N0stackObject):
 
     name = models.CharField(max_length=32, null=False)
     host_id = models.UUIDField(null=False, editable=False)
-    type = models.CharField(null=False, editable=False, choices=SWITCH_TYPES)
+    type = models.CharField(max_length=2, null=False, editable=False, choices=SWITCH_TYPES)
     datapath_id = models.IntegerField(null=False)
     services = models.ManyToManyField(UUIDObject)
 

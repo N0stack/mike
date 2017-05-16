@@ -4,7 +4,7 @@ from uuid import uuid4
 import logger
 
 from mike.services.service import Service
-from mike.models import ModelPort, ModelSwitchLink
+from mike.models import Port, SwitchLink
 
 
 SERVICE_HUB_PRIORITY = 20000  # Layer 2
@@ -12,7 +12,7 @@ SERVICE_HUB_PRIORITY = 20000  # Layer 2
 
 class ModelServiceHubTable(models.Model):
     hub = models.UUIDField(editable=False, null=False)
-    port = models.ForeignKey(ModelPort, related_name="service_hub_table", null=False)
+    port = models.ForeignKey(Port, related_name="service_hub_table", null=False)
 
     class Meta:
         unique_together = (('hub', 'port'))

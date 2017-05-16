@@ -5,7 +5,7 @@ from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from hashlib import md5
 
-from mike.lib.objects.switches import Switches
+from mike.lib.objects.switches import Switch
 from mike.lib.uuid_objects import get_object_type
 
 
@@ -31,7 +31,7 @@ class MikeOpenflowController(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def _switch_features_handler(self, event):
         datapath = event.msg.datapath
-        switch = Switches.models.objects.filter(datapath_id=datapath.id)[0]
+        switch = Switch.objects.filter(datapath_id=datapath.id)[0]
         if not switch:
             # TODO: このあと、スイッチを追加した場合どうするか
             raise  # 'not registered this switch(%d)' % datapath.id

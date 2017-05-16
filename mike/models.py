@@ -8,4 +8,4 @@ from mike.lib.objects.switches import Switch
 from mike.lib.objects.switch_links import SwitchLink
 
 # service
-from mike.service.hub import ModelServiceHubTable
+from mike.services.hub import ModelServiceHubTable
