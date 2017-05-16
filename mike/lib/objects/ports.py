@@ -1,35 +1,33 @@
-from mike.lib.objects.n0stack_object import N0stackObject
-from mike.lib.objects.switches import ModelSwitch
-
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from uuid import uuid4
+
+from mike.lib.objects.n0stack_object import N0stackObject
+from mike.lib.objects.switches import ModelSwitch
 
 
 class ModelPort(models.Model):
     '''
     {
-        "id": UUID,
-        "name": string,
+        "uuid": UUID,
         "number": integer,
+        "name": string,
         "switch": reference,
         "mac_addr": string,
     }
     '''
     uuid = models.UUIDField(primary_key=True, editable=False)
     number = models.IntegerField(null=False)
-    name = models.CharField(max_length=32, default='')  # empty means switch is physicaly
-    # network = models.ForeignKey(ModelNetwork, related_name="ports") ManyToMany?
+    name = models.CharField(max_length=16, default='')
     switch = models.ForeignKey(ModelSwitch, related_name="ports", null=False, editable=False)
-    mac_addr = models.CharField(max_length=17, null=True)
+    mac_addr = models.CharField(max_length=12, null=True)  # ie. 1a2b3c4d5e6f
 
     class Meta:
         unique_together = (('switch', 'number'))
         app_label = 'mike'
 
     def clean(self):
-        # valid mac address
+        # TODO: valid mac address
 
         if self.switch.type is not 'in' and not self.mac_addr:
             raise ValidationError(_('internal switch must have port with MAC address'))
@@ -47,8 +45,6 @@ class Ports(N0stackObject):
         create port to openvswitch
         return (port_number, port_name)
         '''
-        if not switch.name:
-            raise  # this is physical switch, so cannot create the port
 
     @classmethod
     def create(cls, switch, mac_addr):

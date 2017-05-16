@@ -1,21 +1,20 @@
-from mike.lib.objects.n0stack_object import N0stackObject
-from mike.lib.uuid_objects import ModelUUIDObject
-
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from uuid import uuid4
+
+from mike.lib.objects.n0stack_object import N0stackObject
+from mike.lib.uuid_objects import ModelUUIDObject
 
 
 class ModelSwitch(models.Model):
     '''
     {
-        id: UUID,
-        name: string,
-        host_id: reference uuid,
-        internal: boolean,
-        datapath_id: integer,
-        reference: manytomany reference,
+        "uuid": UUID,
+        "name": string,
+        "host_id": uuid,
+        "type": 'in' / 'ex' / 'ph',
+        "datapath_id": integer,
+        "services": manytomany reference,
     }
     '''
     SWITCH_TYPES = (
@@ -28,7 +27,7 @@ class ModelSwitch(models.Model):
     name = models.CharField(max_length=32, null=False)
     host_id = models.UUIDField(null=False, editable=False)
     type = models.CharField(null=False, editable=False, choices=SWITCH_TYPES)
-    datapath_id = models.IntegerField(null=False)  # editable?
+    datapath_id = models.IntegerField(null=False)
     services = models.ManyToManyField(ModelUUIDObject)
 
     class Meta:

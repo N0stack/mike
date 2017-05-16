@@ -1,19 +1,19 @@
-from mike.lib.objects.n0stack_object import N0stackObject
-from mike.lib.objects.switches import ModelSwitch
-
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+
+from mike.lib.objects.n0stack_object import N0stackObject
+from mike.lib.objects.switches import ModelSwitch
 
 
 class ModelSwitchLink(models.Model):
     '''
     {
-        id: integer,
-        name: string,
-        number: integer,
-        next_link: reference,
-        switch: reference,
+        "uuid": integer,
+        "name": string,
+        "number": integer,
+        "next_link": reference,
+        "switch": reference,
     }
     '''
     uuid = models.UUIDField(primary_key=True, editable=False)
@@ -27,19 +27,15 @@ class ModelSwitchLink(models.Model):
 
     def clean(self):
         if self.switch1 is self.switch2:
-            raise ValidationError(_('cannot create link with same switch'))
+            raise ValidationError(_('cannot link with same switch'))
 
 class SwitchLinks(object):
     model = ModelSwitchLink
 
     @classmethod
     def add(cls, switches):
-        if switches[0] is switches[1]:
-            # "cannot create link with same switch"
-            raise
         if switches[0].host_id == switches[1].host_id:
-            # maybe this block will be changed when developing l2 tunneling
-            raise Exception
+            raise Exception  # TODO: maybe this block will be changed when developing l2 tunneling
 
         new_link1 = ModelSwitchLink(name=link_switches[0].name,
                                     number=link_switches[0].number,

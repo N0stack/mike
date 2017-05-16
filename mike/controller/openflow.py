@@ -44,7 +44,7 @@ class MikeOpenflowController(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, event):
-        # 遅延が心配
+        # TODO: 遅延が心配
         uuid = self.cookies[event.msg.cookie]
         object_type = get_object_type(uuid=uuid)
         service_name, service_path = object_type.name, object_type.path
