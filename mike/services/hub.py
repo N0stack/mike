@@ -1,15 +1,13 @@
-from mike.services.service import Service
-from mike.models import ModelPort, ModelSwitchLink
-from mike.exceptions import ExceptionAlreadyExists
-
-
 from ryu.app.ofctl.api import get_datapath
 from django.db import models
 from uuid import uuid4
 import logger
 
+from mike.services.service import Service
+from mike.models import ModelPort, ModelSwitchLink
 
-SERVICE_HUB_PRIORITY = 55000  # Layer 2
+
+SERVICE_HUB_PRIORITY = 20000  # Layer 2
 
 
 class ModelServiceHubTable(models.Model):
@@ -43,13 +41,13 @@ class Hub(Service):
         # self.logger = logger
 
     def generate_flow(self, port):
-        flows = {}
         if port.switch.type in 'in':
-            _generate_internal_flow(port)
+            self._generate_internal_flow(port)
         else:
-            _generate_external_flow(port)
+            self._generate_external_flow(port)
 
     def _generate_internal_flow(self, port):
+        flows = {}
         ports = ModelServiceHubTable.objects.all().filter(hub=self.uuid)
         for dst_port in ports:
             if not port.switch.host_id == dst_port.switch.host_id:
@@ -93,10 +91,10 @@ class Hub(Service):
         return flows
 
     def _generate_external_flow(self, port):
-        ports = ModelServiceHubTable.objects.all().filter(hub=self.uuid)
         '''
         external to internal
         '''
+        ports = ModelServiceHubTable.objects.all().filter(hub=self.uuid)
 
     def add_port(self, port):
         self._learn_mac_address(port)
@@ -106,7 +104,10 @@ class Hub(Service):
     def delete_port(self, port):
         pass
 
-    def packet_in(self, event):
+    def switch_features_handler(self, event):
+        pass
+
+    def packet_in_handler(self, event):
         pass
 
     def _learn_mac_address(self, port):

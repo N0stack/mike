@@ -60,7 +60,14 @@ class Service(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def packet_in(self, event):
+    def switch_features_handler(self, event):
+        '''
+        this method called when switch registered
+        '''
+        pass
+
+    @abstractmethod
+    def packet_in_handler(self, event):
         '''
         this method called when packet in
         '''
