@@ -3,9 +3,9 @@ from abc import ABCMeta, abstractmethod
 
 DEFAULT_PRIORITY = 30000  # Layer 4
 '''
-Layer 2: 50000 ~ 59999
-Layer 3: 40000 ~ 49999
-Layer 4: 30000 ~ 39999
+Layer 2: 20000 ~ 9999
+Layer 3: 30000 ~ 9999
+Layer 4: 40000 ~ 9999
 '''
 
 
@@ -32,16 +32,24 @@ class Service(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_port(self, port):
+    def add_port(self, ev, port, app):
         '''
         add new port
         '''
         pass
 
     @abstractmethod
-    def delete_port(self, port):
+    def delete_port(self, ev, port, app):
         '''
         delete port
+        '''
+        pass
+
+    @abstractmethod
+    def modify_port(self, ev, port, app):
+        '''
+        modify port
+        changed port status
         '''
         pass
 
@@ -60,15 +68,16 @@ class Service(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def switch_features_handler(self, event):
+    def packet_in_handler(self, ev, app):
         '''
-        this method called when switch registered
+        this method called when packet in
         '''
         pass
 
     @abstractmethod
-    def packet_in_handler(self, event):
+    def reinit_ports(self, ev, switch, app):
         '''
-        this method called when packet in
+        this method called when switch registered
+        check and initilize objects
         '''
         pass
