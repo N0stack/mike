@@ -22,6 +22,7 @@ class UUIDObjectType(models.Model):
     name = models.CharField(max_length=16, null=False)
     path = models.CharField(max_length=64, null=False)
     type = models.CharField(max_length=8, null=False, editable=False, choices=UUID_OBJECT_TYPE)
+    # priority = models.IntegerField()  # service priority
 
     class Meta:
         unique_together = (('name', 'path'))
@@ -54,6 +55,29 @@ class UUIDObject(models.Model):
     def __unicode__(self):
         return self.uuid
 
+
+class MikeObject(models.Model):
+    '''
+    this is abstract class for n0stack object managed uuid
+    uuid will be automaticaly seted
+    '''
+
+    uuid = models.UUIDField(primary_key=True, editable=False)
+
+    class Meta:
+        abstract = True
+        app_label = 'mike'
+
+    def save(self, *args, **kwargs):
+        '''
+        automatically set uuid and save for UUIDObject
+        '''
+        if self.uuid:
+            new_object_type = UUIDObjectType.objects.filter(name=self.__class__.__name__)
+            new_object = UUIDObject(object_type=new_object_type)
+            new_object.save()
+            self.uuid = new_object.uuid
+        super(MikeObject, self).save(*args, **kwargs)
 
 def get_object_type(uuid):
     '''

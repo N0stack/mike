@@ -1,5 +1,5 @@
 # base system
-from mike.lib.uuid_object import UUIDObject, UUIDObjectType
+from mike.lib.mike_object import UUIDObject, UUIDObjectType, MikeObject
 
 # n0stack objects
 from mike.lib.objects.switch import Switch

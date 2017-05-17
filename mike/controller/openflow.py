@@ -9,7 +9,7 @@ from mike.lib.objects.switch import Switch
 from mike.lib.objects.port import Port
 from mike.lib.objects.host import Host
 from mike.lib.objects.link import Link
-from mike.lib.uuid_object import get_object_type
+from mike.lib.mike_object import get_object_type
 
 class MikeOpenflowController(app_manager.RyuApp):
     '''
