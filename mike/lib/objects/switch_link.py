@@ -16,9 +16,9 @@ class SwitchLink(N0stackObject):
         "switch": reference,
     }
     '''
-    name = models.CharField(max_length=32, null=False)
+    name = models.CharField(max_length=32, null=False, blank=False)
     number = models.IntegerField(null=False)
-    switch = models.ForeignKey(Switch, related_name="switch_links", null=False)
+    switch = models.ForeignKey(Switch, related_name="switch_links", null=False, editable=False)
     next_link = models.ForeignKey('self', null=False)
 
     class Meta:

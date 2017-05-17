@@ -16,8 +16,8 @@ class Port(N0stackObject):
         "mac_addr": string,
     }
     '''
-    number = models.IntegerField(null=False)
-    name = models.CharField(max_length=16, default='')
+    number = models.IntegerField(null=True)
+    name = models.CharField(max_length=16, null=False, blank=False)
     switch = models.ForeignKey(Switch, related_name="ports", null=False, editable=False)
     mac_addr = models.CharField(max_length=12, null=True)  # ie. 1a2b3c4d5e6f
 
