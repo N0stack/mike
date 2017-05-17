@@ -9,27 +9,32 @@ All packets are processed by OpenFlow with Ryu SDN.
 
 ![](docs/flow.png)
 
-Packets are started from red round node.
+- Packets are started from red round node
+- blue block means packetin
 
-## MVC
-### Model
+## architecture
 
-- N0stackObject (mike.lib.objects.n0stack_object)
-  - Switches (mike.lib.objects.switches)
-  - Ports (mike.lib.objects.ports)
-  - SwitchLinks (mike.lib.objects.switche_links)
-- service (mike.servces.service)
-  - hub (mike.services.hub)
-
-### View
-
-- web (django)
-- shell (django: manage.py)
-- openflow (ryu)
-
-### Controller
-
-- 未定
+```
+Web API (django rest framework)
+||
+||
+\/
++--------------------------------------+
+Model (mike.lib.mike_object.MikeObject)
+- mike.lib.objects
+  - switch
+  - port
+    - host
+    - link
+- mike.services
++--------------------------------------+
+/\                ||
+|| Openflow       ||
+\/                \/
+Openflow switch / Open vSwitch
+                  - internal
+                  - external
+```
 
 ## Author
 
