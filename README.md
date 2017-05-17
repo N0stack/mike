@@ -15,7 +15,7 @@ All packets are processed by OpenFlow with Ryu SDN.
 ## architecture
 
 ```
-Web API (django rest framework)
+REST API (django)
 ||
 ||
 \/

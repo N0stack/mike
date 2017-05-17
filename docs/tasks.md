@@ -4,6 +4,7 @@
 - [ ] test code of `mike.lib.objects.*`
 - [ ] make api document
 - [ ] develop web api with django rest framework
+- [ ] develop deploy switches for metal hosts
 - [ ] develop basic services
   - [ ] l2sw
   - [ ] router
