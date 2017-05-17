@@ -31,7 +31,6 @@ class Switch(N0stackObject):
 
     class Meta:
         unique_together = (('host_id', 'datapath_id'))
-        app_label = 'mike'
 
     def clean(self):
         if self.type is not 'ph' and not self.name:

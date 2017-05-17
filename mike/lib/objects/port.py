@@ -10,26 +10,17 @@ class Port(N0stackObject):
     '''
     {
         "uuid": UUID,
-        "number": integer,
         "name": string,
+        "number": integer,
         "switch": reference,
-        "mac_addr": string,
     }
     '''
-    number = models.IntegerField(null=True)
     name = models.CharField(max_length=16, null=False, blank=False)
-    switch = models.ForeignKey(Switch, related_name="ports", null=False, editable=False)
-    mac_addr = models.CharField(max_length=12, null=True)  # ie. 1a2b3c4d5e6f
+    number = models.IntegerField(null=True)
 
     class Meta:
         unique_together = (('switch', 'number'))
-        app_label = 'mike'
-
-    def clean(self):
-        # TODO: valid mac address
-
-        if self.switch.type is not 'in' and not self.mac_addr:
-            raise ValidationError(_('internal switch must have port with MAC address'))
+        abstract = True
 
     def __unicode__(self):
         return self.uuid

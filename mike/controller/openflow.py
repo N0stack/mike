@@ -12,7 +12,8 @@ django.setup()
 
 from mike.lib.objects.switch import Switch
 from mike.lib.objects.port import Port
-from mike.lib.objects.switch_link import SwitchLink
+from mike.lib.objects.host import Host
+from mike.lib.objects.link import Link
 from mike.lib.uuid_object import get_object_type
 
 class MikeOpenflowController(app_manager.RyuApp):
@@ -69,18 +70,20 @@ class MikeOpenflowController(app_manager.RyuApp):
 
     @set_ev_cls(dpset.EventPortAdd, MAIN_DISPATCHER)
     def _add_port_handler(self, ev):
-        # TODO: depend on tora api
-        port = Port.objects.filter(switch__datapath_id=ev.dp.id,
-                                   number=ev.port.port_name)
-        if not port:
-            raise Exception('[add] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))
-        port[0].number = ev.port.port_no
-        port[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
-        port[0].save()
+        h = Host.objects.filter(switch__datapath_id=ev.dp.id,
+                                number=ev.port.port_name)
+        if h:
+            port[0].number = ev.port.port_no
+            # port[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
+            port[0].save()
 
-        for s in port.switch.services.all():
-            self._class_def(s.object_type.path,
-                            s.object_type.type)(s.uuid).add_port(ev, port[0], self)
+            for s in port.switch.services.all():
+                self._class_def(s.object_type.path,
+                                s.object_type.type)(s.uuid).add_port(ev, port[0], self)
+            return
+        
+        l = Link
+        raise Exception('[add] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))
 
     @set_ev_cls(dpset.EventPortDelete, MAIN_DISPATCHER)
     def _delete_port_handler(self, ev):
@@ -101,7 +104,7 @@ class MikeOpenflowController(app_manager.RyuApp):
             raise Exception('[modify] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))
         port[0].number = ev.port.port_no
         port[0].name = ev.port.name
-        port[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
+        # port[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
         port[0].save()
         for s in port[0].switch.services.all():
             self._class_def(s.object_type.path,
