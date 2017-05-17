@@ -19,7 +19,7 @@ class Port(N0stackObject):
     number = models.IntegerField(null=True)
 
     class Meta:
-        unique_together = (('switch', 'number'))
+        unique_together = (('switch', 'number'), ('switch', 'name'))
         abstract = True
 
     def __unicode__(self):
