@@ -4,11 +4,6 @@ from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from hashlib import md5
-import os
-import django
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mike.settings")
-django.setup()
 
 from mike.lib.objects.switch import Switch
 from mike.lib.objects.port import Port
@@ -71,41 +66,95 @@ class MikeOpenflowController(app_manager.RyuApp):
     @set_ev_cls(dpset.EventPortAdd, MAIN_DISPATCHER)
     def _add_port_handler(self, ev):
         h = Host.objects.filter(switch__datapath_id=ev.dp.id,
-                                number=ev.port.port_name)
+                                name=ev.port.name)
         if h:
-            port[0].number = ev.port.port_no
-            # port[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
-            port[0].save()
+            h[0].number = ev.port.port_no
+            h[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
+            h[0].save()
 
-            for s in port.switch.services.all():
-                self._class_def(s.object_type.path,
-                                s.object_type.type)(s.uuid).add_port(ev, port[0], self)
+            for s in h[0].switch.services.all():
+                c = self._class_def(s.object_type.path,
+                                    s.object_type.type)
+                c(s.uuid).add_host(ev=ev,
+                                   host=h[0],
+                                   app=self)
             return
-        
-        l = Link
+
+        l = Link.objects.filter(switch__datapath_id=ev.dp.id,
+                                name=ev.port.name)
+        if l:
+            # check connect status
+            l[0].number = ev.port.port_no
+            l[0].save()
+
+            for s in l[0].switch.services.all():
+                c = self._class_def(s.object_type.path,
+                                    s.object_type.type)
+                c(s.uuid).add_link(ev=ev,
+                                   link=l[0],
+                                   app=self)
+            return
         raise Exception('[add] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))
 
     @set_ev_cls(dpset.EventPortDelete, MAIN_DISPATCHER)
     def _delete_port_handler(self, ev):
-        port = Port.objects.filter(switch__datapath_id=ev.dp.id,
-                                   number=ev.port.port_no)
-        if not port:
-            raise Exception('[delete] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))
-        for s in port[0].switch.services.all():
-            self._class_def(s.object_type.path,
-                            s.object_type.type)(s.uuid).delete_port(ev, port[0], self)
-        port[0].delete()
+        h = Host.objects.filter(switch__datapath_id=ev.dp.id,
+                                number=ev.port.port_no)
+        if h:
+            for s in h[0].switch.services.all():
+                c = self._class_def(s.object_type.path,
+                                    s.object_type.type)
+                c(s.uuid).delete_host(ev=ev,
+                                      host=h[0],
+                                      app=self)
+            h.delete()
+            return
+
+        l = Link.objects.filter(switch__datapath_id=ev.dp.id,
+                                number=ev.port.port_no)
+        if l:
+            for s in l[0].switch.services.all():
+                c = self._class_def(s.object_type.path,
+                                    s.object_type.type)
+                c(s.uuid).delete_link(ev=ev,
+                                      link=l[0],
+                                      app=self)
+            l[0].delete()
+            return
+
+        raise Exception('[delete] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))
 
     @set_ev_cls(dpset.EventPortModify, MAIN_DISPATCHER)
     def _modify_port_handler(self, ev):
-        port = Port.objects.filter(switch__datapath_id=ev.dp.id,
-                                   number=ev.port.port_no)
-        if not port:
-            raise Exception('[modify] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))
-        port[0].number = ev.port.port_no
-        port[0].name = ev.port.name
-        # port[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
-        port[0].save()
-        for s in port[0].switch.services.all():
-            self._class_def(s.object_type.path,
-                            s.object_type.type)(s.uuid).modify_port(ev, port[0], self)
+        h = Host.objects.filter(switch__datapath_id=ev.dp.id,
+                                number=ev.port.port_no)
+        if h:
+            h[0].number = ev.port.port_no
+            h[0].name = ev.port.name
+            h[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
+            h[0].save()
+
+            for s in h[0].switch.services.all():
+                c = self._class_def(s.object_type.path,
+                                    s.object_type.type)
+                c(s.uuid).modify_port(ev=ev,
+                                      host=h[0],
+                                      app=self)
+            return
+
+        l = Link.objects.filter(switch__datapath_id=ev.dp.id,
+                                number=ev.port.port_no)
+        if l:
+            # check connect status
+            l[0].number = ev.port.port_no
+            l[0].name = ev.port.name
+            l[0].save()
+
+            for s in l[0].switch.services.all():
+                c = self._class_def(s.object_type.path,
+                                    s.object_type.type)
+                c(s.uuid).modify_link(ev=ev,
+                                      link=l[0],
+                                      app=self)
+            return
+        raise Exception('[modify] not registered this port(%d, %s) on the switch(%d)' % (ev.port.port_no, ev.port.name, ev.dp.id))

@@ -16,9 +16,6 @@ class Service(metaclass=ABCMeta):
     ex. l2sw, l3sw, napt route, firewall and so on
     '''
 
-    def __init__(self, ryu_app):
-        self._ryu_app = ryu_app
-
     @abstractmethod
     def generate_flow(self, *args, **kwargs):
         '''
@@ -32,24 +29,46 @@ class Service(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_port(self, ev, port, app):
+    def add_host(self, ev, host, app):
         '''
-        add new port
-        '''
-        pass
-
-    @abstractmethod
-    def delete_port(self, ev, port, app):
-        '''
-        delete port
+        add new host
         '''
         pass
 
     @abstractmethod
-    def modify_port(self, ev, port, app):
+    def delete_host(self, ev, host, app):
         '''
-        modify port
-        changed port status
+        delete host
+        '''
+        pass
+
+    @abstractmethod
+    def modify_host(self, ev, host, app):
+        '''
+        modify host
+        changed host status
+        '''
+        pass
+
+    @abstractmethod
+    def add_link(self, ev, link, app):
+        '''
+        add new link
+        '''
+        pass
+
+    @abstractmethod
+    def delete_link(self, ev, link, app):
+        '''
+        delete link
+        '''
+        pass
+
+    @abstractmethod
+    def modify_link(self, ev, link, app):
+        '''
+        modify link
+        changed link status
         '''
         pass
 
