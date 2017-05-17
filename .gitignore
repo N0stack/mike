@@ -94,3 +94,8 @@ ENV/
 
 # coverage report
 cover/
+
+# sqlite
+*.sqlite3
+
+tmp
