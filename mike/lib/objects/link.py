@@ -23,6 +23,7 @@ class Link(Port):
         unique_together = (('switch', 'next_link'), ('switch', 'number'))
 
     def clean(self):
+        super(Link, self).clean()
         if self.switch is self.next_link.switch:
             raise ValidationError(_('cannot link with same switch'))
 

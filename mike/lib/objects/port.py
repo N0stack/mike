@@ -15,12 +15,17 @@ class Port(MikeObject):
         "switch": reference,
     }
     '''
-    name = models.CharField(max_length=16, null=False, blank=False)
+    name = models.CharField(max_length=16, null=False, blank=True)
     number = models.IntegerField(null=True)
+    state = models.IntegerField(null=False)
 
     class Meta:
         unique_together = (('switch', 'number'), ('switch', 'name'))
         abstract = True
+
+    def clean(self):
+        if not self.name and not self.number:
+            raise ValidationError(_("this taple is not unique"))
 
     def __unicode__(self):
         return self.uuid
