@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
+from mike.lib.mike_object import UUIDObject, UUIDObjectType
+
 
 DEFAULT_PRIORITY = 30000  # Layer 4
 '''
@@ -15,6 +17,17 @@ class Service(metaclass=ABCMeta):
     designed for connecting networks
     ex. l2sw, l3sw, napt route, firewall and so on
     '''
+
+    def __init__(self, uuid):
+        '''
+        register UUIDObject and generate uuid
+        '''
+        if uuid:
+            self.uuid_object = UUIDObject(uuid=uuid)
+        else:
+            t = UUIDObjectType.objects.filter(name=self.__class__.__name__)
+            self.uuid_object = UUIDObject(type=t)
+            self.uuid_object.save()
 
     @abstractmethod
     def generate_flow(self, *args, **kwargs):
@@ -72,19 +85,12 @@ class Service(metaclass=ABCMeta):
         '''
         pass
 
-    @abstractmethod
     def add_switch(self, switch):
-        '''
-        add switch
-        '''
-        pass
+        switch.services.add(self.uuid_object)
 
-    @abstractmethod
     def delete_switch(self, switch):
-        '''
-        delete switch
-        '''
-        pass
+        switch.services.remove(self.uuid_object)
+
 
     @abstractmethod
     def packet_in_handler(self, ev, app):
@@ -100,3 +106,10 @@ class Service(metaclass=ABCMeta):
         check and initilize objects
         '''
         pass
+
+    def delete(self):
+        '''
+        delete self
+        '''
+        raise NotImplementedError()
+
