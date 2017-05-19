@@ -21,7 +21,7 @@ class Host(Port):
 
     def clean(self):
         super(Host, self).clean()
-        if self.switch.type is not 'in' and not self.mac_addr:
+        if not self.switch.type == 'in' and not self.mac_addr:
             raise ValidationError(_('internal switch must have port with MAC address'))
 
         # TODO: valid mac address

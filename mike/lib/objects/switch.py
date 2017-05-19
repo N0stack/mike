@@ -32,9 +32,11 @@ class Switch(MikeObject):
         unique_together = (('host_id', 'datapath_id'))
 
     def clean(self):
-        if self.type is not 'ph' and not self.name:
+        if not self.type == 'ph' and not self.name:
             raise ValidationError(_('internal openvswitch interface is not seted name'))
         # checking that service is not n0stack object
 
     def __unicode__(self):
         return self.uuid
+
+# def create_switch(host_id):
