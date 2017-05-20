@@ -1,18 +1,18 @@
 from ryu.app.ofctl.api import get_datapath
 from django.db import models
-from uuid import uuid4
-import logger
 
 from mike.services.service import Service
-from mike.models import Port, SwitchLink
+from mike.lib.objects.switch import Switch
+from mike.lib.objects.link import Link
+from mike.lib.objects.host import Host
 
 
 SERVICE_HUB_PRIORITY = 20000  # Layer 2
 
 
-class ModelServiceHubTable(models.Model):
+class ServiceHubTable(models.Model):
     hub = models.UUIDField(editable=False, null=False)
-    port = models.ForeignKey(Port, related_name="service_hub_table", null=False)
+    host = models.ForeignKey(Host, null=False)
 
     class Meta:
         unique_together = (('hub', 'port'))
@@ -32,112 +32,104 @@ class Hub(Service):
       - external to external
     '''
 
-    def __init__(self, ryu_app, uuid=None):
-        super(Hub, self).__init__(ryu_app)
-        if uuid:
-            self.uuid = uuid
-        else:
-            self.uuid = uuid4
-        # self.logger = logger
+    def __init__(self, uuid=None):
+        super(Hub, self).__init__(uuid)
 
-    def generate_flow(self, port):
-        if port.switch.type in 'in':
-            self._generate_internal_flow(port)
-        else:
-            self._generate_external_flow(port)
+    def _learn_all(self, ryu_app):
+        hosts = Host.objects.filter(switch__in=self.uuid_object.switches)
+        for h in hosts:
+            self._learn(h, ryu_app)
 
-    def _generate_internal_flow(self, port):
-        flows = {}
-        ports = ModelServiceHubTable.objects.all().filter(hub=self.uuid)
-        for dst_port in ports:
-            if not port.switch.host_id == dst_port.switch.host_id:
-                '''
-                tunneling
-                '''
-            if port.switch.datapath_id == dst_port.switch.datapath_id:
-                '''
-                internal to internal
-                '''
-                datapath = get_datapath(self._ryu_app,
-                                        port.switch.datapath_id)
-                parser = datapath.ofproto_parser
-                match = parser.OFPMatch(in_port=port.number,
-                                        eth_dst=dst_port.mac_address)
-                actions = [parser.OFPActionOutput(dst_port.number)]
-                flows[port.switch.datapath] = (match, actions)
-            else:
-                '''
-                internal to external
-                '''
-                in_link = ModelSwitchLink.objects.all().filter(switch__uuid=port.switch.uuid,
-                                                               next_link__uuid=dst_port.switch.uuid)[0]
-
-                datapath = get_datapath(self._ryu_app,
-                                        port.switch.datapath_id)
-                parser = datapath.ofproto_parser
-                match = parser.OFPMatch(in_port=port.number,
-                                        eth_dst=dst_port.mac_address)
-                actions = [parser.OFPActionOutput(in_link.number)]
-                flows[port.switch.datapath] = (match, actions)
-
-                # secondary switch
-                datapath = get_datapath(self._ryu_app,
-                                        dst_port.switch.datapath_id)
-                parser = datapath.ofproto_parser
-                match = parser.OFPMatch(in_port=in_link.next_link.number,
-                                        eth_dst=dst_port.mac_address)
-                actions = [parser.OFPActionOutput(dst_port.number)]
-                flows[datapath] = (match, actions)
-        return flows
-
-    def _generate_external_flow(self, port):
-        '''
-        external to internal
-        '''
-        ports = ModelServiceHubTable.objects.all().filter(hub=self.uuid)
-
-    def add_port(self, port):
-        self._learn_mac_address(port)
-        for k, v in self.generate_flow(port):
-            self._send_flow(k, v[0], v[1])
-
-    def delete_port(self, port):
-        pass
-
-    def switch_features_handler(self, event):
-        pass
-
-    def packet_in_handler(self, event):
-        pass
-
-    def _learn_mac_address(self, port):
+    def _learn(self, host, ryu_app):
         '''
         learning mac address
         '''
-        new_query = ModelServiceHubTable(hub=self.uuid,
-                                         port=port)
-        new_query.save()
-        # self.logger.info("[add mac table] dpid: %s, src_address: %s, inport: %s service: %s",
-        #                  port.switch.dpid,
-        #                  port.mac_address,
-        #                  port.name,
-        #                  self.uuid)
-
-    def _send_flow(self, datapath, match, actions, buffer_id=None):
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-        instruction = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
-                                                    actions)]
-
-        if buffer_id:
-            flow_mod = parser.OFPFlowMod(datapath=datapath,
-                                         buffer_id=buffer_id,
+        new_network = ServiceHubTable(hub=self.uuid_object, host=host)
+        new_network.save()
+        flows = self._generate_flow(host, ryu_app)
+        for f in flows:
+            ofproto = f[0].ofproto
+            parser = f[0].ofproto_parser
+            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,  # TODO: UPDATEに変更する
+                                                 f[2])]
+            flow_mod = parser.OFPFlowMod(datapath=f[0],
                                          priority=SERVICE_HUB_PRIORITY,
-                                         match=match,
-                                         instructions=instruction)
-        else:
-            flow_mod = parser.OFPFlowMod(datapath=datapath,
+                                         match=f[1],
+                                         instructions=inst)
+            f[0].send_msg(flow_mod)
+
+    def _forget(self, host, ryu_app):
+        '''
+        deleting mac address
+        '''
+        new_network = ServiceHubTable(hub=self.uuid_object, host=host)
+        new_network.delete()
+        flows = self._generate_flow(host, ryu_app)
+        for f in flows:
+            ofproto = f[0].ofproto
+            parser = f[0].ofproto_parser
+            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,  # TODO: DELETEに変更する
+                                                 f[2])]
+            flow_mod = parser.OFPFlowMod(datapath=f[0],
                                          priority=SERVICE_HUB_PRIORITY,
-                                         match=match,
-                                         instructions=instruction)
-        datapath.send_msg(flow_mod)
+                                         match=f[1],
+                                         instructions=inst)
+            f[0].send_msg(flow_mod)
+
+    def generate_flow(self, host, ryu_app):
+        flows = []
+        for s in self.uuid_object.switches.all():
+            if host.switch is s:
+                '''
+                myself
+                '''
+                datapath = get_datapath(ryu_app,
+                                        host.switch.datapath_id)
+                parser = datapath.ofproto_parser
+                match = parser.OFPMatch(eth_dst=host.hw_addr)
+                actions = [parser.OFPActionOutput(host.number)]
+                flows.append((datapath, match, actions))
+            elif host.switch.host_id == s.host_id:
+                '''
+                to external
+                '''
+                l = host.switch.links.filter(next_link__switch=s)
+                if not l:
+                    hosts = Host.objects.filter(switch=s)
+                    for h in hosts:
+                        self._forget(h, ryu_app)
+                    # raise Exception("not linked switches in same host")
+                    raise Exception('no flow for %s(%s) on %s, deleted', (s.name, s.uuid, s.host_id))  # 操作がない
+
+                datapath = get_datapath(ryu_app,
+                                        host.switch.datapath_id)
+                parser = datapath.ofproto_parser
+                match = parser.OFPMatch(eth_dst=host.hw_addr)
+                actions = [parser.OFPActionOutput(l.number)]
+                flows.append((datapath, match, actions))
+            elif host.switch.host_id != s.host_id:
+                '''
+                to internal(tunneling)
+                '''
+                pass
+
+    def add_host(self, ev, host, app):
+        self._learn(host, app)
+
+    def delete_host(self, ev, host, app):
+        self._forget(host, app)
+
+    def modify_host(self, ev, host, app):
+        self._learn(host, app)
+
+    def add_link(self, ev, link, app):
+        self._learn_all(app)
+
+    def delete_link(self, ev, link, app):
+        self._learn_all(app)
+
+    def modify_link(self, ev, link, app):
+        self._learn_all(app)
+
+    def reinit_ports(self, ev, switch, app):
+        self._learn_all(app)
