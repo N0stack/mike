@@ -61,7 +61,7 @@ class MikeOpenflowController(app_manager.RyuApp):
         uuid = self.cookies[ev.msg.cookie]
         object_type = get_object_type(uuid=uuid)
         self._class_def(object_type.path,
-                        object_type.type)(uuid).packet_in_handler(ev, self)
+                        object_type.type)(uuid).packet_in(ev, self)
 
     @set_ev_cls(dpset.EventPortAdd, MAIN_DISPATCHER)
     def _add_port_handler(self, ev):
@@ -69,7 +69,7 @@ class MikeOpenflowController(app_manager.RyuApp):
                                 name=ev.port.name)
         if h:
             h[0].number = ev.port.port_no
-            h[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
+            h[0].hw_addr = ev.port.hw_addr  # TODO: 本当か?
             h[0].save()
 
             for s in h[0].switch.services.all():
@@ -131,7 +131,7 @@ class MikeOpenflowController(app_manager.RyuApp):
         if h:
             h[0].number = ev.port.port_no
             h[0].name = ev.port.name
-            h[0].mac_addr = ev.port.hw_addr  # TODO: 本当か?
+            h[0].hw_addr = ev.port.hw_addr  # TODO: 本当か?
             h[0].save()
 
             for s in h[0].switch.services.all():

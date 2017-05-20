@@ -32,12 +32,8 @@ class Service(metaclass=ABCMeta):
     @abstractmethod
     def generate_flow(self, *args, **kwargs):
         '''
-        return {
-            datapath: (
-                match,
-                actions
-            )
-        }
+        this method prepared for uppper layer
+        return [(datapath, match, actions)]
         '''
         pass
 
@@ -45,6 +41,7 @@ class Service(metaclass=ABCMeta):
     def add_host(self, ev, host, app):
         '''
         add new host
+        this method prepared for mike.controller.openflow
         '''
         pass
 
@@ -52,6 +49,7 @@ class Service(metaclass=ABCMeta):
     def delete_host(self, ev, host, app):
         '''
         delete host
+        this method prepared for mike.controller.openflow
         '''
         pass
 
@@ -59,7 +57,7 @@ class Service(metaclass=ABCMeta):
     def modify_host(self, ev, host, app):
         '''
         modify host
-        changed host status
+        this method prepared for mike.controller.openflow
         '''
         pass
 
@@ -67,6 +65,7 @@ class Service(metaclass=ABCMeta):
     def add_link(self, ev, link, app):
         '''
         add new link
+        this method prepared for mike.controller.openflow
         '''
         pass
 
@@ -74,6 +73,7 @@ class Service(metaclass=ABCMeta):
     def delete_link(self, ev, link, app):
         '''
         delete link
+        this method prepared for mike.controller.openflow
         '''
         pass
 
@@ -82,28 +82,35 @@ class Service(metaclass=ABCMeta):
         '''
         modify link
         changed link status
+        this method prepared for mike.controller.openflow
         '''
         pass
 
     def add_switch(self, switch):
+        '''
+        this method prepared for web API
+        '''
         switch.services.add(self.uuid_object)
 
     def delete_switch(self, switch):
+        '''
+        this method prepared for web API
+        '''
         switch.services.remove(self.uuid_object)
 
-
-    @abstractmethod
-    def packet_in_handler(self, ev, app):
+    def packet_in(self, ev, app):
         '''
         this method called when packet in
+        this method prepared for mike.controller.openflow
         '''
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     def reinit_ports(self, ev, switch, app):
         '''
         this method called when switch registered
         check and initilize objects
+        this method prepared for mike.controller.openflow
         '''
         pass
 
