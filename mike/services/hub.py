@@ -35,12 +35,12 @@ class Hub(Service):
     def __init__(self, uuid=None):
         super(Hub, self).__init__(uuid)
 
-    def _learn_all(self, ryu_app):
+    def learn_all(self, ryu_app):
         hosts = Host.objects.filter(switch__in=self.uuid_object.switches)
         for h in hosts:
-            self._learn(h, ryu_app)
+            self.learn(h, ryu_app)
 
-    def _learn(self, host, ryu_app):
+    def learn(self, host, ryu_app):
         '''
         learning mac address
         '''
@@ -58,7 +58,7 @@ class Hub(Service):
                                          instructions=inst)
             f[0].send_msg(flow_mod)
 
-    def _forget(self, host, ryu_app):
+    def forget(self, host, ryu_app):
         '''
         deleting mac address
         '''
@@ -97,7 +97,7 @@ class Hub(Service):
                 if not l:
                     hosts = Host.objects.filter(switch=s)
                     for h in hosts:
-                        self._forget(h, ryu_app)
+                        self.forget(h, ryu_app)
                     # raise Exception("not linked switches in same host")
                     raise Exception('no flow for %s(%s) on %s, deleted', (s.name, s.uuid, s.host_id))  # 操作がない
 
@@ -114,22 +114,25 @@ class Hub(Service):
                 pass
 
     def add_host(self, ev, host, app):
-        self._learn(host, app)
+        self.learn(host, app)
 
     def delete_host(self, ev, host, app):
-        self._forget(host, app)
+        self.forget(host, app)
 
     def modify_host(self, ev, host, app):
-        self._learn(host, app)
+        self.learn(host, app)
 
     def add_link(self, ev, link, app):
-        self._learn_all(app)
+        self.learn_all(app)
 
     def delete_link(self, ev, link, app):
-        self._learn_all(app)
+        self.learn_all(app)
 
     def modify_link(self, ev, link, app):
-        self._learn_all(app)
+        self.learn_all(app)
+
+    def packet_in(self, ev, app):
+        self.learn(ev,)
 
     def reinit_ports(self, ev, switch, app):
-        self._learn_all(app)
+        self.learn_all(app)
