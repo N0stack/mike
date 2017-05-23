@@ -3,7 +3,7 @@
 Mike is calico cat called in Japanese.
 
 This component is debeloped for n0stack networking.
-All packets are processed by OpenFlow with Ryu SDN.
+This is web api as NorthBound interface of managing network.
 
 ## Flow Model
 
@@ -29,7 +29,7 @@ Model (mike.lib.mike_object.MikeObject)
 - mike.services
 +--------------------------------------+
 /\                ||
-|| Openflow       ||
+|| Openflow       || ovsdb
 \/                \/
 Openflow switch / Open vSwitch
                   - internal
