@@ -3,10 +3,10 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from mike.lib.objects.switch import Switch
-from mike.lib.objects.port import Port
+from mike.lib.objects.interface import Interface
 
 
-class Host(Port):
+class Host(Interface):
     '''
     {
         "uuid": UUID,

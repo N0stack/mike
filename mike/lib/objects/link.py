@@ -3,10 +3,10 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from mike.lib.objects.switch import Switch
-from mike.lib.objects.port import Port
+from mike.lib.objects.interface import Interface
 
 
-class Link(Port):
+class Link(Interface):
     '''
     {
         "uuid": integer,
@@ -20,7 +20,7 @@ class Link(Port):
     next_link = models.ForeignKey('self', null=False)
 
     class Meta:
-        unique_together = (('switch', 'next_link'), ('switch', 'number'))
+        unique_together = (('switch', 'next_link'))
 
     def clean(self):
         super(Link, self).clean()
@@ -42,3 +42,5 @@ class Link(Port):
 #     new_link1.next_link = new_link2
 #     new_link1.save()
 #     new_link2.save()
+
+# send OFPPC_NO_PACKET_IN
