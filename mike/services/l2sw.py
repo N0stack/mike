@@ -94,7 +94,7 @@ class L2sw(Service):
         vlan_id = self.cookies[ev.msg.cookie]
         network = self.objects.filter(vlan_id=vlan_id)
 
-        network.hub.packet_in_handler(ev, app)
+        network.hub.packet_in(ev, app)
 
     def reinit_ports(self, ev, switch, app):
         if not switch.type == 'ex':

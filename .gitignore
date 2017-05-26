@@ -95,7 +95,8 @@ ENV/
 # coverage report
 cover/
 
-# sqlite
+# django
 *.sqlite3
+*/migrations/
 
 tmp

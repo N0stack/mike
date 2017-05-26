@@ -1,10 +1,9 @@
-from mike.lib.objects.switches import Switches
-from mike.lib.objects.ports import Ports
-
 from unittest import TestCase
 from nose.tools import eq_, ok_, raises
 from django.db.utils import IntegrityError
 from uuid import uuid4
+
+from mike.
 
 
 class TestSwitches(TestCase):
@@ -79,14 +78,14 @@ class TestPorts(TestCase):
                                      switch=self.switch,
                                      mac_addr="10:00:00:00:00:03",
                                      ipv4_addr="192.168.0.1",
-                                     ipv4_subnet_mask="255.255.255.0"))
+                                     ipv4_subnetmask="255.255.255.0"))
         # same ip address port
         ports_uuids.append(Ports.add(number=5,
                                      name="veth3",
                                      switch=self.switch,
                                      mac_addr="10:00:00:00:00:04",
                                      ipv4_addr="192.168.0.1",
-                                     ipv4_subnet_mask="255.255.255.0"))
+                                     ipv4_subnetmask="255.255.255.0"))
         sw2_uuid = Switches.add(name="test_sw2",
                                 host_id=self.host_id,
                                 datapath_id=21)
@@ -97,7 +96,7 @@ class TestPorts(TestCase):
                                      switch=sw2,
                                      mac_addr="10:00:00:00:00:04",
                                      ipv4_addr="192.168.0.1",
-                                     ipv4_subnet_mask="255.255.255.0"))
+                                     ipv4_subnetmask="255.255.255.0"))
 
         p = Ports.get_from_uuids([ports_uuids[0]])[0]
         eq_(p.number, 1)
@@ -105,42 +104,42 @@ class TestPorts(TestCase):
         eq_(p.switch, self.switch)
         eq_(p.mac_addr, "10:00:00:00:00:01")
         eq_(p.ipv4_addr, "")
-        eq_(p.ipv4_subnet_mask, "")
+        eq_(p.ipv4_subnetmask, "")
         p = Ports.get_from_uuids([ports_uuids[1]])[0]
         eq_(p.number, 2)
         eq_(p.name, "veth0")
         eq_(p.switch, self.switch)
         eq_(p.mac_addr, "10:00:00:00:00:02")
         eq_(p.ipv4_addr, "")
-        eq_(p.ipv4_subnet_mask, "")
+        eq_(p.ipv4_subnetmask, "")
         p = Ports.get_from_uuids([ports_uuids[2]])[0]
         eq_(p.number, 3)
         eq_(p.name, "veth1")
         eq_(p.switch, self.switch)
         eq_(p.mac_addr, "10:00:00:00:00:02")
         eq_(p.ipv4_addr, "")
-        eq_(p.ipv4_subnet_mask, "")
+        eq_(p.ipv4_subnetmask, "")
         p = Ports.get_from_uuids([ports_uuids[3]])[0]
         eq_(p.number, 4)
         eq_(p.name, "veth2")
         eq_(p.switch, self.switch)
         eq_(p.mac_addr, "10:00:00:00:00:03")
         eq_(p.ipv4_addr, "192.168.0.1")
-        eq_(p.ipv4_subnet_mask, "255.255.255.0")
+        eq_(p.ipv4_subnetmask, "255.255.255.0")
         p = Ports.get_from_uuids([ports_uuids[4]])[0]
         eq_(p.number, 5)
         eq_(p.name, "veth3")
         eq_(p.switch, self.switch)
         eq_(p.mac_addr, "10:00:00:00:00:04")
         eq_(p.ipv4_addr, "192.168.0.1")
-        eq_(p.ipv4_subnet_mask, "255.255.255.0")
+        eq_(p.ipv4_subnetmask, "255.255.255.0")
         p = Ports.get_from_uuids([ports_uuids[5]])[0]
         eq_(p.number, 5)
         eq_(p.name, "veth3")
         eq_(p.switch, sw2)
         eq_(p.mac_addr, "10:00:00:00:00:04")
         eq_(p.ipv4_addr, "192.168.0.1")
-        eq_(p.ipv4_subnet_mask, "255.255.255.0")
+        eq_(p.ipv4_subnetmask, "255.255.255.0")
 
         # __unicode__ との比較がうまく行かないので迷う
         # eq_(p, ports_uuids[5])
@@ -181,11 +180,11 @@ class TestPorts(TestCase):
                   name="veth1",
                   switch=self.switch,
                   mac_addr="10:00:00:00:00:01",
-                  ipv4_subnet_mask="255.255.255.0")
+                  ipv4_subnetmask="255.255.255.0")
 
     @raises(Exception)
     def test_add_ports_invalid_args_no_name_subnet(self):
         Ports.add(number=1,
                   switch=self.switch,
                   mac_addr="10:00:00:00:00:01",
-                  ipv4_subnet_mask="255.255.255.0")
+                  ipv4_subnetmask="255.255.255.0")

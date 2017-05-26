@@ -46,7 +46,7 @@ class Hub(Service):
         '''
         new_network = ServiceHubTable(hub=self.uuid_object, host=host)
         new_network.save()
-        flows = self._generate_flow(host, ryu_app)
+        flows = self._generate_flow(host, ryu_app)  
         for f in flows:
             ofproto = f[0].ofproto
             parser = f[0].ofproto_parser
@@ -130,9 +130,6 @@ class Hub(Service):
 
     def modify_link(self, ev, link, app):
         self.learn_all(app)
-
-    def packet_in(self, ev, app):
-        self.learn(ev,)
 
     def reinit_ports(self, ev, switch, app):
         self.learn_all(app)

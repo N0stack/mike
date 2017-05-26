@@ -22,16 +22,11 @@ class Switch(MikeObject):
         (u'ph', 'physical'),  # physical switch port
     )
 
-    SWITCH_STATES = (
-        (u'NOT_REG', 'still not registered'),  # first state
-    )
-
     name = models.CharField(max_length=32, null=False)
     host_id = models.UUIDField(null=False, editable=False)
     type = models.CharField(max_length=2, null=False, editable=False, choices=SWITCH_TYPES)
     datapath_id = models.IntegerField(null=False)
     services = models.ManyToManyField(UUIDObject, related_name="switches")
-    state = models.CharField(max_length=8, null=False, choices=SWITCH_STATES)
 
     class Meta:
         unique_together = (('host_id', 'datapath_id'))
