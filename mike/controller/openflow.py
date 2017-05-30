@@ -7,9 +7,9 @@ from hashlib import md5
 
 from mike.lib.objects.switch import Switch
 from mike.lib.objects.port import Port
-from mike.lib.objects.host import Host
 from mike.lib.objects.link import Link
 from mike.lib.mike_object import get_object_type
+
 
 class MikeOpenflowController(app_manager.RyuApp):
     '''
@@ -65,7 +65,7 @@ class MikeOpenflowController(app_manager.RyuApp):
 
     @set_ev_cls(dpset.EventPortAdd, MAIN_DISPATCHER)
     def _add_port_handler(self, ev):
-        h = Host.objects.filter(switch__datapath_id=ev.dp.id,
+        h = Port.objects.filter(switch__datapath_id=ev.dp.id,
                                 name=ev.port.name)
         if h:
             h[0].number = ev.port.port_no
@@ -75,8 +75,8 @@ class MikeOpenflowController(app_manager.RyuApp):
             for s in h[0].switch.services.all():
                 c = self._class_def(s.object_type.path,
                                     s.object_type.type)
-                c(s.uuid).add_host(ev=ev,
-                                   host=h[0],
+                c(s.uuid).add_port(ev=ev,
+                                   port=h[0],
                                    app=self)
             return
 
@@ -98,14 +98,14 @@ class MikeOpenflowController(app_manager.RyuApp):
 
     @set_ev_cls(dpset.EventPortDelete, MAIN_DISPATCHER)
     def _delete_port_handler(self, ev):
-        h = Host.objects.filter(switch__datapath_id=ev.dp.id,
+        h = Port.objects.filter(switch__datapath_id=ev.dp.id,
                                 number=ev.port.port_no)
         if h:
             for s in h[0].switch.services.all():
                 c = self._class_def(s.object_type.path,
                                     s.object_type.type)
-                c(s.uuid).delete_host(ev=ev,
-                                      host=h[0],
+                c(s.uuid).delete_port(ev=ev,
+                                      port=h[0],
                                       app=self)
             h.delete()
             return
@@ -126,7 +126,7 @@ class MikeOpenflowController(app_manager.RyuApp):
 
     @set_ev_cls(dpset.EventPortModify, MAIN_DISPATCHER)
     def _modify_port_handler(self, ev):
-        h = Host.objects.filter(switch__datapath_id=ev.dp.id,
+        h = Port.objects.filter(switch__datapath_id=ev.dp.id,
                                 number=ev.port.port_no)
         if h:
             h[0].number = ev.port.port_no
@@ -138,7 +138,7 @@ class MikeOpenflowController(app_manager.RyuApp):
                 c = self._class_def(s.object_type.path,
                                     s.object_type.type)
                 c(s.uuid).modify_port(ev=ev,
-                                      host=h[0],
+                                      port=h[0],
                                       app=self)
             return
 

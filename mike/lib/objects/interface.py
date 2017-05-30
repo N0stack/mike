@@ -12,7 +12,7 @@ class Interface(MikeObject):
         "uuid": UUID,
         "name": string,
         "number": integer,
-        "switch": reference,
+        "state": integer, (OFPPS_LINK_DOWN, )
     }
     '''
     name = models.CharField(max_length=16, null=False, blank=True)

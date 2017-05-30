@@ -29,7 +29,7 @@ class Link(Interface):
 
 
 # def create_link(switches):
-#     if switches[0].host_id == switches[1].host_id:
+#     if switches[0].port_id == switches[1].port_id:
 #         raise Exception  # TODO: maybe this block will be changed when developing l2 tunneling
 
 #     new_link1 = Link(name=link_switches[0].name,

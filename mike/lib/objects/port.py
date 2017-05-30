@@ -1,7 +1,4 @@
 from django.db import models
-from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
-from ryu.ofproto.ofproto_v1_3 import OFPPS_LINK_DOWN
 
 from mike.lib.objects.interface import Interface
 from mike.lib.objects.switch import Switch
@@ -14,6 +11,9 @@ class Port(Interface):
         "name": string,
         "number": integer,
         "switch": reference,
+        "hw_addrs": [
+            char[8],
+        ]
     }
     '''
     switch = models.ForeignKey(Switch, related_name="ports", null=False, editable=False)

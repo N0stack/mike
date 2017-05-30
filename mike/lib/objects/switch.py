@@ -10,10 +10,16 @@ class Switch(MikeObject):
     {
         "uuid": UUID,
         "name": string,
-        "host_id": uuid,
-        "type": 'in' / 'ex' / 'ph',
+        "port_id": uuid,
+        "type": char[2], 'in' / 'ex' / 'ph'
         "datapath_id": integer,
         "services": manytomany reference,
+        "ports": [
+            reference,
+        ],
+        "links": [
+            reference,
+        ]
     }
     '''
     SWITCH_TYPES = (
@@ -39,4 +45,4 @@ class Switch(MikeObject):
     def __unicode__(self):
         return self.uuid
 
-# def create_switch(host_id):
+# def create_switch(port_id):
