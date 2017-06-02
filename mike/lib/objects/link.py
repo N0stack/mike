@@ -27,6 +27,9 @@ class Link(Interface):
         if self.switch is self.next_link.switch:
             raise ValidationError(_('cannot link with same switch'))
 
+        if self.switch.host_id != self.next_link.switch.host_id:
+            raise ValidationError(_('cannot link with other host switch'))
+
 
 # def create_link(switches):
 #     if switches[0].port_id == switches[1].port_id:
