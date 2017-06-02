@@ -15,25 +15,26 @@ This is web api as NorthBound interface of managing network.
 ## architecture
 
 ```
-REST API (django)
-||
-||
-\/
-+--------------------------------------+
-Model (mike.lib.mike_object.MikeObject)
-- mike.lib.objects
-  - switch
-  - port
-    - host
-    - link
-- mike.services
-+--------------------------------------+
-/\                ||
-|| Openflow       || ovsdb
-\/                \/
-Openflow switch / Open vSwitch
-                  - internal
-                  - external
+    ||
+    || HTTP
+    \/
+ +------+  +-----------------+
+ REST API  OpenFlow Controller
+ +------+  +-----------------+
+ /\    ||    /\ /\   /\ ||
+ ||    ||    || ||   || ||
+ ||    ||    || ||   || ||
+ |============| ||   || ||
+ ||    ||       ||   || ||
+ \/    \/       ||   || ||
++---+  ++       ||   || ||
+RDBMS  MQ========|   || ||
++---+  ++            || ||
+            Openflow || || ovsdb
+                     \/ \/
+                 +----------+
+                 Open vSwitch
+                 +----------+
 ```
 
 ## Author
