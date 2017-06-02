@@ -25,9 +25,21 @@ class Service(metaclass=ABCMeta):
         if uuid:
             self.uuid_object = UUIDObject(uuid=uuid)
         else:
-            t = UUIDObjectType.objects.filter(name=self.__class__.__name__)
-            self.uuid_object = UUIDObject(type=t)
+            t = UUIDObjectType.objects.filter(name=self.__class__.__name__)[0]
+            self.uuid_object = UUIDObject(object_type=t)
             self.uuid_object.save()
+
+    def add_switch(self, switch):
+        '''
+        this method prepared for web API
+        '''
+        switch.services.add(self.uuid_object)
+
+    def delete_switch(self, switch):
+        '''
+        this method prepared for web API
+        '''
+        switch.services.remove(self.uuid_object)
 
     @abstractmethod
     def generate_flow(self, *args, **kwargs):
@@ -38,25 +50,25 @@ class Service(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_host(self, ev, host, app):
+    def add_port(self, ev, port, app):
         '''
-        add new host
+        add new port
         this method prepared for mike.controller.openflow
         '''
         pass
 
     @abstractmethod
-    def delete_host(self, ev, host, app):
+    def delete_port(self, ev, port, app):
         '''
-        delete host
+        delete port
         this method prepared for mike.controller.openflow
         '''
         pass
 
     @abstractmethod
-    def modify_host(self, ev, host, app):
+    def modify_port(self, ev, port, app):
         '''
-        modify host
+        modify port
         this method prepared for mike.controller.openflow
         '''
         pass
@@ -86,18 +98,6 @@ class Service(metaclass=ABCMeta):
         '''
         pass
 
-    def add_switch(self, switch):
-        '''
-        this method prepared for web API
-        '''
-        switch.services.add(self.uuid_object)
-
-    def delete_switch(self, switch):
-        '''
-        this method prepared for web API
-        '''
-        switch.services.remove(self.uuid_object)
-
     def packet_in(self, ev, app):
         '''
         this method called when packet in
@@ -106,7 +106,7 @@ class Service(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def reinit_ports(self, ev, switch, app):
+    def init_ports(self, ev, switch, app):
         '''
         this method called when switch registered
         check and initilize objects

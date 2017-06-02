@@ -72,8 +72,8 @@ class MikeObject(models.Model):
         '''
         automatically set uuid and save for UUIDObject
         '''
-        if self.uuid:
-            new_object_type = UUIDObjectType.objects.filter(name=self.__class__.__name__)
+        if not self.uuid:
+            new_object_type = UUIDObjectType.objects.filter(name=self.__class__.__name__)[0]
             new_object = UUIDObject(object_type=new_object_type)
             new_object.save()
             self.uuid = new_object.uuid
