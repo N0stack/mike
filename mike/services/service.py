@@ -42,14 +42,6 @@ class Service(metaclass=ABCMeta):
         switch.services.remove(self.uuid_object)
 
     @abstractmethod
-    def generate_flow(self, *args, **kwargs):
-        '''
-        this method prepared for uppper layer
-        return [(datapath, match, actions)]
-        '''
-        pass
-
-    @abstractmethod
     def add_port(self, ev, port, app):
         '''
         add new port

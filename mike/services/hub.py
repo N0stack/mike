@@ -78,7 +78,7 @@ class Hub(Service):
                                     hw_addr=hw_addr,
                                     float=float)
         new_entry.save()
-        flows = self.generate_flow(new_entry, app)
+        flows = self._generate_flow(new_entry, app)
         for f in flows:
             ofproto = f[0].ofproto
             parser = f[0].ofproto_parser
@@ -108,7 +108,7 @@ class Hub(Service):
         entry.hw_addr = hw_addr
         entry.float = float
         entry.save()
-        flows = self.generate_flow(entry, app)
+        flows = self._generate_flow(entry, app)
         for f in flows:
             ofproto = f[0].ofproto
             parser = f[0].ofproto_parser
@@ -138,7 +138,7 @@ class Hub(Service):
                                 port=port,
                                 hw_addr=hw_addr)
         entry.delete()
-        flows = self.generate_flow(entry, app)
+        flows = self._generate_flow(entry, app)
         for f in flows:
             ofproto = f[0].ofproto
             parser = f[0].ofproto_parser
@@ -151,7 +151,7 @@ class Hub(Service):
                                          instructions=inst)
             f[0].send_msg(flow_mod)
 
-    def generate_flow(self, entry, app):
+    def _generate_flow(self, entry, app):
         flows = []
         for s in self.uuid_object.switches.all():
             if entry.port.switch == s:
@@ -189,23 +189,47 @@ class Hub(Service):
                 app.logger.info("tunnel")
         return flows
 
+    def _generate_broadcast(self, datapath, switch):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        match = parser.OFPMatch(eth_dst='ff:ff:ff:ff:ff:ff')
+        actions = []
+        if switch.type == 'ex':
+            for p in switch.ports.all():
+                actions.append(parser.OFPActionOutput(p.number))
+        else:
+            actions.append(parser.OFPActionOutput(ofproto.OFPP_FLOOD))
+        return (datapath, match, actions)
+
     def add_port(self, ev, port, app):
-        self._update_port(port, app)
+        datapath = ev.msg.datapath
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        flow = self._generate_broadcast(datapath, port.switch)
+        i = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, flow[2])]
+        mod = parser.OFPFlowMod(datapath=datapath,
+                                priority=SERVICE_HUB_PRIORITY,
+                                command=ofproto.OFPFC_MODIFY,
+                                match=flow[1],
+                                instructions=i)
+        datapath.send_msg(mod)
+        # TODO: flowの追加
 
     def delete_port(self, ev, port, app):
-        self._update_port(port, app)
+        pass
 
     def modify_port(self, ev, port, app):
-        self._update_port(port, app)
+        pass
 
     def add_link(self, ev, link, app):
-        self._update_all(app)
+        pass
 
     def delete_link(self, ev, link, app):
-        self._update_all(app)
+        pass
 
     def modify_link(self, ev, link, app):
-        self._update_all(app)
+        pass
 
     def init_ports(self, ev, switch, app):
         # delete old flows
@@ -220,21 +244,22 @@ class Hub(Service):
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
-        i = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=datapath,
                                 priority=SERVICE_HUB_PACKET_IN_PRIORITY,
                                 cookie=cookie,
+                                command=ofproto.OFPFC_ADD,
                                 match=match,
-                                instructions=i)
+                                instructions=inst)
         datapath.send_msg(mod)
 
-        match = parser.OFPMatch(eth_dst='ff:ff:ff:ff:ff:ff')
-        actions = [parser.OFPActionOutput(datapath.ofproto.OFPP_FLOOD)]
-        i = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        flow = self._generate_broadcast(datapath, switch)
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, flow[2])]
         mod = parser.OFPFlowMod(datapath=datapath,
                                 priority=SERVICE_HUB_PRIORITY,
-                                match=match,
-                                instructions=i)
+                                command=ofproto.OFPFC_ADD,
+                                match=flow[1],
+                                instructions=inst)
         datapath.send_msg(mod)
 
         self._update_all(app)
