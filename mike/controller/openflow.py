@@ -3,6 +3,7 @@ from ryu.controller import ofp_event, dpset
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
+from django.db.utils import IntegrityError
 from hashlib import md5
 
 from mike.lib.objects.switch import Switch
@@ -31,9 +32,16 @@ class MikeOpenflowController(app_manager.RyuApp):
         '''
         return cookie hooked packet_in_handler
         '''
-        _cookie = md5(uuid).digest()
+        cookie = int(md5(str(uuid).encode('utf-8')).hexdigest()[:16], 16)
+
         cls._cookies[cookie] = uuid
         return cookie
+
+    _datapath = {}
+
+    @classmethod
+    def get_datapath(cls, datapath_id):
+        return cls._datapath[datapath_id]
 
     @staticmethod
     def _class_def(path, name):
@@ -43,6 +51,7 @@ class MikeOpenflowController(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def _switch_features_handler(self, ev):
         self.logger.info("switch added: %d" % ev.msg.datapath.id)
+        self._datapath[ev.msg.datapath.id] = ev.msg.datapath
 
     @set_ev_cls(ofp_event.EventOFPPortDescStatsReply, CONFIG_DISPATCHER)
     def _port_desc_stats_reply_handler(self, ev):
@@ -51,26 +60,32 @@ class MikeOpenflowController(app_manager.RyuApp):
             # TODO: このあと、スイッチを追加した場合どうするか
             raise Exception('not registered this switch(%d)' % ev.msg.datapath.id)  # TODO: Exceptionを変える
 
+        # from IPython.core.debugger import Pdb
+        # Pdb(color_scheme='Linux').set_trace()
+
         for s in switch[0].services.all():
             self._class_def(s.object_type.path,
                             s.object_type.name)(s.uuid).init_ports(ev,
                                                                    switch[0],
                                                                    self)
         for p in ev.msg.body:
-            new_port = Port(switch=switch,
+            new_port = Port(switch=switch[0],
                             number=p.port_no,
                             name=p.name)
-            try:  # TODO: check Exception, maybe uniq
+            try:
                 new_port.save()
-                self._class_def(s.object_type.path,
-                                s.object_type.name)(s.uuid).add_port(ev,
-                                                                     new_port,
-                                                                     self)
-            except:
+                for s in switch[0].services.all():
+                    self._class_def(s.object_type.path,
+                                    s.object_type.name)(s.uuid).add_port(ev,
+                                                                         new_port,
+                                                                         self)
+            except IntegrityError:
                 pass
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
+        self.logger.info("packet in on %d" % ev.msg.datapath.id)
+
         # TODO: 遅延が心配
         uuid = self._cookies[ev.msg.cookie]
         object_type = get_object_type(uuid=uuid)

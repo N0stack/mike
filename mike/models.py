@@ -8,4 +8,4 @@ from mike.lib.objects.port import Port
 from mike.lib.objects.link import Link
 
 # service
-# from mike.services.hub import ModelServiceHubTable
+from mike.services.hub import ServiceHubTable
