@@ -21,20 +21,20 @@ class MikeOpenflowController(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(MikeOpenflowController, self).__init__(*args, **kwargs)
 
-    _cookies = {}
+    _cookies_packet_in = {}
     '''
     cookies[cookie] = uuid
     cookie: 64bit => md5(uuid)
     '''
 
     @classmethod
-    def add_cookie_hook(cls, uuid):
+    def packet_in_hook(cls, uuid):
         '''
         return cookie hooked packet_in_handler
         '''
         cookie = int(md5(str(uuid).encode('utf-8')).hexdigest()[:16], 16)
 
-        cls._cookies[cookie] = uuid
+        cls._cookies_packet_in[cookie] = uuid
         return cookie
 
     _datapath = {}
@@ -85,8 +85,7 @@ class MikeOpenflowController(app_manager.RyuApp):
     def _packet_in_handler(self, ev):
         self.logger.info("packet in on %d for %d" % (ev.msg.datapath.id, ev.msg.match['in_port']))
 
-        # TODO: 遅延が心配
-        uuid = self._cookies[ev.msg.cookie]
+        uuid = self._cookies_packet_in[ev.msg.cookie]
         object_type = get_object_type(uuid=uuid)
         self._class_def(object_type.path,
                         object_type.name)(uuid).packet_in(ev, self)

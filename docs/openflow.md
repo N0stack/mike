@@ -2,6 +2,6 @@
 
 - ryu.appの実態
 
-## `add_cookie_hook(uuid)`
+## `packet_in_hook(uuid)`
 
 - cookieを記憶し、uuidのオブジェクトのpacket_inハンドラーを実行

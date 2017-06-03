@@ -238,7 +238,7 @@ class Hub(Service):
         old_flows.delete()
 
         datapath = ev.msg.datapath
-        cookie = MikeOpenflowController.add_cookie_hook(self.uuid_object.uuid)
+        cookie = MikeOpenflowController.packet_in_hook(self.uuid_object.uuid)
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         match = parser.OFPMatch()
