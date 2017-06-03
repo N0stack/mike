@@ -26,7 +26,7 @@ class ServiceHubTable(models.Model):
     }
     '''
     hub = models.ForeignKey(UUIDObject, editable=False, null=False)
-    port = models.ForeignKey(Port, null=False)
+    port = models.ForeignKey(Port, null=False, editable=False)
     hw_addr = models.CharField(max_length=17, null=False)  # ie. 1a2b3c4d5e6f
     float = models.BooleanField(default=True, null=False)
 
@@ -70,14 +70,44 @@ class Hub(Service):
         '''
         learning mac address
         '''
-        entry = ServiceHubTable(hub=self.uuid_object,
-                                port=port,
-                                hw_addr=hw_addr,
-                                float=float)
-        try: # debug
-            entry.save()
-        except:
-            pass
+        entry = self.objects.filter(port=port)
+        if entry:
+            return
+        new_entry = ServiceHubTable(hub=self.uuid_object,
+                                    port=port,
+                                    hw_addr=hw_addr,
+                                    float=float)
+        new_entry.save()
+        flows = self.generate_flow(new_entry, app)
+        for f in flows:
+            ofproto = f[0].ofproto
+            parser = f[0].ofproto_parser
+            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+                                                 f[2])]
+            if float:
+                flow_mod = parser.OFPFlowMod(datapath=f[0],
+                                             priority=SERVICE_HUB_PRIORITY,
+                                             command=ofproto.OFPFC_ADD,
+                                             match=f[1],
+                                             idle_timeout=SERVICE_HUB_IDLE_TIMEOUT,
+                                             instructions=inst)
+            else:
+                flow_mod = parser.OFPFlowMod(datapath=f[0],
+                                             priority=SERVICE_HUB_PRIORITY,
+                                             command=ofproto.OFPFC_ADD,
+                                             match=f[1],
+                                             instructions=inst)
+            f[0].send_msg(flow_mod)
+            app.logger.info("flow added for %s" % port.name)
+
+    def update(self, port, hw_addr, app, float=True):
+        '''
+        learning mac address
+        '''
+        entry = self.objects.filter(port=port)
+        entry.hw_addr = hw_addr
+        entry.float = float
+        entry.save()
         flows = self.generate_flow(entry, app)
         for f in flows:
             ofproto = f[0].ofproto
@@ -194,12 +224,18 @@ class Hub(Service):
         mod = parser.OFPFlowMod(datapath=datapath,
                                 priority=SERVICE_HUB_PACKET_IN_PRIORITY,
                                 cookie=cookie,
-                                table_id=0,
                                 match=match,
                                 instructions=i)
         datapath.send_msg(mod)
 
-        # TODO: flood
+        match = parser.OFPMatch(eth_dst='ff:ff:ff:ff:ff:ff')
+        actions = [parser.OFPActionOutput(datapath.ofproto.OFPP_FLOOD)]
+        i = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=datapath,
+                                priority=SERVICE_HUB_PRIORITY,
+                                match=match,
+                                instructions=i)
+        datapath.send_msg(mod)
 
         self._update_all(app)
 
@@ -218,10 +254,13 @@ class Hub(Service):
 
         datapath = ev.msg.datapath
         entry = self.objects.filter(hw_addr=dst_hwaddr)
-        if entry:
-            out_port = entry[0].port.number
-        else:
-            out_port = datapath.ofproto.OFPP_FLOOD  # TODO: これいらなくない？パケット増えるしexに漏れるし
+        if not entry:
+            return  # debug
+            raise Exception('does not hub entry')
+        out_port = entry[0].port.number
+
+        # from IPython.core.debugger import Pdb
+        # Pdb(color_scheme='Linux').set_trace()
 
         actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
         data = None

@@ -83,7 +83,7 @@ class MikeOpenflowController(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
-        self.logger.info("packet in on %d" % ev.msg.datapath.id)
+        self.logger.info("packet in on %d for %d" % (ev.msg.datapath.id, ev.msg.match['in_port']))
 
         # TODO: 遅延が心配
         uuid = self._cookies[ev.msg.cookie]
