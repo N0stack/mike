@@ -41,6 +41,9 @@
 ```
 
 - ホストをつなぐ
+- 基本的にVMを作成する際にはAPIを叩く必要はない
+  - openflow側で生成されたことを認識できるため
+  - MACアドレスの登録は `mike.services.hub` で
 
 ## mike.lib.objects.link
 
@@ -56,3 +59,5 @@
 
 - internalとexternalスイッチをつなぐ
   - internalとinternalは禁止 (Modelの制約を追加済み)
+- 現状はSwitchが作成された時点で自動的に生成される予定
+  - APIでPOSTする必要はない

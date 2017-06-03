@@ -15,6 +15,16 @@ SERVICE_HUB_IDLE_TIMEOUT = 60
 
 
 class ServiceHubTable(models.Model):
+    '''
+    mac address table
+    {
+        "id": integer,
+        "hub": reference,
+        "port": reference,
+        "hw_addr": char[17],
+        "float": boolean,
+    }
+    '''
     hub = models.ForeignKey(UUIDObject, editable=False, null=False)
     port = models.ForeignKey(Port, null=False)
     hw_addr = models.CharField(max_length=17, null=False)  # ie. 1a2b3c4d5e6f
@@ -211,7 +221,7 @@ class Hub(Service):
         if entry:
             out_port = entry[0].port.number
         else:
-            out_port = datapath.ofproto.OFPP_FLOOD
+            out_port = datapath.ofproto.OFPP_FLOOD  # TODO: これいらなくない？パケット増えるしexに漏れるし
 
         actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
         data = None

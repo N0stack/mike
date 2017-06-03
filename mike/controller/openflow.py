@@ -57,7 +57,6 @@ class MikeOpenflowController(app_manager.RyuApp):
     def _port_desc_stats_reply_handler(self, ev):
         switch = Switch.objects.filter(datapath_id=ev.msg.datapath.id)
         if not switch:
-            # TODO: このあと、スイッチを追加した場合どうするか
             raise Exception('not registered this switch(%d)' % ev.msg.datapath.id)  # TODO: Exceptionを変える
 
         # from IPython.core.debugger import Pdb
