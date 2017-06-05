@@ -13,7 +13,7 @@
     "hub": reference,
     "port": reference,
     "hw_addr": char[17],
-    "float": boolean,
+    "floating": boolean,
 }
 ```
 
@@ -21,7 +21,7 @@
   - 1つhubが1つのL2ネットワークを意味する
   - tunnelingも内包する予定
 
-### `/v1/services/hub/(?P<hub_uuid>)`
+### `/v1/services/hub/table/(?P<hub_uuid>)`
 
 - GET
 - PUT
@@ -39,5 +39,12 @@
 ```
 
 - 固定MACアドレスを登録
-- `float = false`
+- `floating = false`
 - mqを通じてopenflowからフローを送信
+
+### `/v1/services/hub/switch/(?P<hub_uuid>)`
+
+- GET
+- PUT
+- POST
+
