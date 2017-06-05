@@ -11,7 +11,8 @@ from mike.lib.objects.port import Port
 
 SERVICE_HUB_PRIORITY = 20000  # Layer 2
 SERVICE_HUB_PACKET_IN_PRIORITY = 2000  # Layer 2
-SERVICE_HUB_IDLE_TIMEOUT = 60
+SERVICE_HUB_IDLE_TIMEOUT = 10  # DEBUG
+# SERVICE_HUB_IDLE_TIMEOUT = 60
 
 
 class ServiceHubTable(models.Model):
@@ -22,13 +23,13 @@ class ServiceHubTable(models.Model):
         "hub": reference,
         "port": reference,
         "hw_addr": char[17],
-        "float": boolean,
+        "floating": boolean,
     }
     '''
     hub = models.ForeignKey(UUIDObject, editable=False, null=False)
     port = models.ForeignKey(Port, null=False, editable=False)
     hw_addr = models.CharField(max_length=17, null=False)  # ie. 1a2b3c4d5e6f
-    float = models.BooleanField(default=True, null=False)
+    floating = models.BooleanField(default=True, null=False)
 
     class Meta:
         unique_together = (('port', 'hw_addr'))
@@ -48,9 +49,10 @@ class Hub(Service):
       - external to external
 
     task:
-      - flood
       - tunneling
     '''
+
+    _cookies_removed_flow = {}
 
     def __init__(self, uuid=None):
         super(Hub, self).__init__(uuid)
@@ -66,7 +68,7 @@ class Hub(Service):
         for e in entries:
             self.learn(port, e.hw_addr, ryu_app, False)
 
-    def learn(self, port, hw_addr, app, float=True):
+    def learn(self, port, hw_addr, app, floating=True):
         '''
         learning mac address
         '''
@@ -76,7 +78,7 @@ class Hub(Service):
         new_entry = ServiceHubTable(hub=self.uuid_object,
                                     port=port,
                                     hw_addr=hw_addr,
-                                    float=float)
+                                    floating=floating)
         new_entry.save()
         flows = self._generate_flow(new_entry, app)
         for f in flows:
@@ -84,29 +86,33 @@ class Hub(Service):
             parser = f[0].ofproto_parser
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                                  f[2])]
-            if float:
+            if floating:
+                cookie = MikeOpenflowController.hook_remove_flow(str(self.uuid_object.uuid))
+                self._cookies_removed_flow[cookie] = new_entry
                 flow_mod = parser.OFPFlowMod(datapath=f[0],
-                                             priority=SERVICE_HUB_PRIORITY,
                                              command=ofproto.OFPFC_ADD,
+                                             priority=SERVICE_HUB_PRIORITY,
+                                             cookie=cookie,
+                                             flags=ofproto.OFPFF_SEND_FLOW_REM,
                                              match=f[1],
                                              idle_timeout=SERVICE_HUB_IDLE_TIMEOUT,
                                              instructions=inst)
             else:
                 flow_mod = parser.OFPFlowMod(datapath=f[0],
-                                             priority=SERVICE_HUB_PRIORITY,
                                              command=ofproto.OFPFC_ADD,
+                                             priority=SERVICE_HUB_PRIORITY,
                                              match=f[1],
                                              instructions=inst)
             f[0].send_msg(flow_mod)
             app.logger.info("flow added for %s" % port.name)
 
-    def update(self, port, hw_addr, app, float=True):
+    def update(self, port, hw_addr, app, floating=True):
         '''
         learning mac address
         '''
         entry = self.objects.filter(port=port)
         entry.hw_addr = hw_addr
-        entry.float = float
+        entry.floating = floating
         entry.save()
         flows = self._generate_flow(entry, app)
         for f in flows:
@@ -114,17 +120,20 @@ class Hub(Service):
             parser = f[0].ofproto_parser
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                                  f[2])]
-            if float:
+            if floating:
+                cookie = MikeOpenflowController.hook_remove_flow(self.uuid_object.uuid)
+                self._cookies_removed_flow[cookie] = entry
                 flow_mod = parser.OFPFlowMod(datapath=f[0],
-                                             priority=SERVICE_HUB_PRIORITY,
                                              command=ofproto.OFPFC_MODIFY,
+                                             priority=SERVICE_HUB_PRIORITY,
+                                             cookie=cookie,
                                              match=f[1],
                                              idle_timeout=SERVICE_HUB_IDLE_TIMEOUT,
                                              instructions=inst)
             else:
                 flow_mod = parser.OFPFlowMod(datapath=f[0],
-                                             priority=SERVICE_HUB_PRIORITY,
                                              command=ofproto.OFPFC_MODIFY,
+                                             priority=SERVICE_HUB_PRIORITY,
                                              match=f[1],
                                              instructions=inst)
             f[0].send_msg(flow_mod)
@@ -145,8 +154,8 @@ class Hub(Service):
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                                  f[2])]
             flow_mod = parser.OFPFlowMod(datapath=f[0],
-                                         priority=SERVICE_HUB_PRIORITY,
                                          command=ofproto.OFPFC_DELETE,
+                                         priority=SERVICE_HUB_PRIORITY,
                                          match=f[1],
                                          instructions=inst)
             f[0].send_msg(flow_mod)
@@ -234,11 +243,11 @@ class Hub(Service):
     def init_ports(self, ev, switch, app):
         # delete old flows
         old_flows = self.objects.filter(port__switch__datapath_id=ev.msg.datapath.id,
-                                        float=True)
+                                        floating=True)
         old_flows.delete()
 
         datapath = ev.msg.datapath
-        cookie = MikeOpenflowController.packet_in_hook(self.uuid_object.uuid)
+        cookie = MikeOpenflowController.hook_packet_in(self.uuid_object.uuid)
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         match = parser.OFPMatch()
@@ -297,3 +306,7 @@ class Hub(Service):
                                                    actions=actions,
                                                    data=data)
         datapath.send_msg(out)
+
+    def removed_flow(self, ev, app):
+        entry = self._cookies_removed_flow[ev.msg.cookie]
+        entry.delete()

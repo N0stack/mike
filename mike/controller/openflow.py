@@ -4,7 +4,7 @@ from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from django.db.utils import IntegrityError
-from hashlib import md5
+from random import randint
 
 from mike.lib.objects.switch import Switch
 from mike.lib.objects.port import Port
@@ -28,13 +28,29 @@ class MikeOpenflowController(app_manager.RyuApp):
     '''
 
     @classmethod
-    def packet_in_hook(cls, uuid):
+    def hook_packet_in(cls, uuid):
         '''
-        return cookie hooked packet_in_handler
+        return cookie hooked _packet_in_handler
+
+        :param uuid service uuid
         '''
-        cookie = int(md5(str(uuid).encode('utf-8')).hexdigest()[:16], 16)
+        cookie = randint(0, 0xffffffff)
 
         cls._cookies_packet_in[cookie] = uuid
+        return cookie
+
+    _cookies_remove_flow = {}
+
+    @classmethod
+    def hook_remove_flow(cls, uuid):
+        '''
+        return cookie hooked _flow_removed_handler
+
+        :param uuid service uuid
+        '''
+        cookie = randint(0, 0xffffffff)
+
+        cls._cookies_remove_flow[cookie] = uuid
         return cookie
 
     _datapath = {}
@@ -89,6 +105,15 @@ class MikeOpenflowController(app_manager.RyuApp):
         object_type = get_object_type(uuid=uuid)
         self._class_def(object_type.path,
                         object_type.name)(uuid).packet_in(ev, self)
+
+    @set_ev_cls(ofp_event.EventOFPFlowRemoved, MAIN_DISPATCHER)
+    def _flow_removed_handler(self, ev):
+        self.logger.info("remove flow on %d" % (ev.msg.datapath.id))
+
+        uuid = self._cookies_remove_flow[ev.msg.cookie]
+        object_type = get_object_type(uuid=uuid)
+        self._class_def(object_type.path,
+                        object_type.name)(uuid).removed_flow(ev, self)
 
     @set_ev_cls(dpset.EventPortAdd, MAIN_DISPATCHER)
     def _add_port_handler(self, ev):
