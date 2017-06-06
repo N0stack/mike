@@ -34,7 +34,7 @@ class MikeOpenflowController(app_manager.RyuApp):
 
         :param uuid service uuid
         '''
-        cookie = randint(0, 0xffffffff)
+        cookie = randint(0, 0xffffffffffffffff)
 
         cls._cookies_packet_in[cookie] = uuid
         return cookie
@@ -48,7 +48,7 @@ class MikeOpenflowController(app_manager.RyuApp):
 
         :param uuid service uuid
         '''
-        cookie = randint(0, 0xffffffff)
+        cookie = randint(0, 0xffffffffffffffff)
 
         cls._cookies_remove_flow[cookie] = uuid
         return cookie
