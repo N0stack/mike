@@ -97,6 +97,13 @@ class Service(metaclass=ABCMeta):
         '''
         raise NotImplementedError()
 
+    def removed_flow(self, ev, app):
+        '''
+        this method called when flow removed
+        this method prepared for mike.controller.openflow
+        '''
+        raise NotImplementedError()
+
     @abstractmethod
     def init_ports(self, ev, switch, app):
         '''
