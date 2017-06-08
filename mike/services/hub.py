@@ -157,7 +157,7 @@ class Hub(Service):
 
                 match = parser.OFPMatch(eth_src=entry.hw_addr)
                 actions = [parser.OFPActionOutput(entry.port.number)]
-                inst = [parser.OFPInstructionActions(ofproto.OFPIT_WRITE_ACTIONS,
+                inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                                      actions),
                         parser.OFPInstructionWriteMetadata(self.metadata, self.METADATA_MASK),
                         parser.OFPInstructionGotoTable(self.DST_TABLE)]
