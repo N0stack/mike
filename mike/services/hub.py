@@ -52,11 +52,16 @@ class Hub(Service):
       - tunneling
     '''
 
+    SRC_TABLE = 1
+    DST_TABLE = 2
+    META_DATA_MASK = 0xffffffffffffffff
+
     _cookies_removed_flow = {}
 
     def __init__(self, uuid=None):
         super(Hub, self).__init__(uuid)
         self.objects = ServiceHubTable.objects.filter(hub=self.uuid_object)
+        self.meta_data = 1  # TODO: hub1つにつき自動生成
 
     def _update_all(self, ryu_app):
         entries = self.objects.all()
@@ -80,31 +85,10 @@ class Hub(Service):
                                     hw_addr=hw_addr,
                                     floating=floating)
         new_entry.save()
-        flows = self._generate_flow(new_entry, app)
-        for f in flows:
-            ofproto = f[0].ofproto
-            parser = f[0].ofproto_parser
-            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
-                                                 f[2])]
-            if floating:
-                cookie = MikeOpenflowController.hook_remove_flow(str(self.uuid_object.uuid))
-                self._cookies_removed_flow[cookie] = new_entry
-                flow_mod = parser.OFPFlowMod(datapath=f[0],
-                                             command=ofproto.OFPFC_ADD,
-                                             priority=SERVICE_HUB_PRIORITY,
-                                             cookie=cookie,
-                                             flags=ofproto.OFPFF_SEND_FLOW_REM,
-                                             match=f[1],
-                                             idle_timeout=SERVICE_HUB_IDLE_TIMEOUT,
-                                             instructions=inst)
-            else:
-                flow_mod = parser.OFPFlowMod(datapath=f[0],
-                                             command=ofproto.OFPFC_ADD,
-                                             priority=SERVICE_HUB_PRIORITY,
-                                             match=f[1],
-                                             instructions=inst)
-            f[0].send_msg(flow_mod)
-            app.logger.info("flow added for %s" % port.name)
+
+        datapath = MikeOpenflowController.get_datapath(new_entry.port.switch.datapath_id)
+        self._send_entry_flow(new_entry, app, datapath.ofproto.OFPFC_ADD)
+        app.logger.info("flow added for %s" % port.name)
 
     def update(self, port, hw_addr, app, floating=True):
         '''
@@ -160,18 +144,66 @@ class Hub(Service):
                                          instructions=inst)
             f[0].send_msg(flow_mod)
 
-    def _generate_flow(self, entry, app):
-        flows = []
+    def _send_entry_flow(self, entry, app, command=None):
         for s in self.uuid_object.switches.all():
             if entry.port.switch == s:
                 '''
                 myself
+                TODO: refactoring
                 '''
                 datapath = MikeOpenflowController.get_datapath(entry.port.switch.datapath_id)
+                ofproto = datapath.ofproto
                 parser = datapath.ofproto_parser
+
+                match = parser.OFPMatch(eth_src=entry.hw_addr)
+                actions = [parser.OFPActionOutput(entry.port.number)]
+                inst = [parser.OFPInstructionActions(ofproto.OFPIT_WRITE_ACTIONS,
+                                                     actions),
+                        parser.OFPInstructionWriteMetadata(self.meta_data),
+                        parser.OFPInstructionGotoTable(self.DST_TABLE)]
+                if entry.floating:
+                    cookie = MikeOpenflowController.hook_remove_flow(self.uuid_object.uuid)
+                    self._cookies_removed_flow[cookie] = entry
+                    flow_mod = parser.OFPFlowMod(datapath=datapath,
+                                                 command=command,
+                                                 priority=SERVICE_HUB_PRIORITY,
+                                                 cookie=cookie,
+                                                 table_id=self.SRC_TABLE,
+                                                 match=match,
+                                                 idle_timeout=SERVICE_HUB_IDLE_TIMEOUT,
+                                                 instructions=inst)
+                else:
+                    flow_mod = parser.OFPFlowMod(datapath=datapath,
+                                                 command=command,
+                                                 priority=SERVICE_HUB_PRIORITY,
+                                                 table_id=self.SRC_TABLE,
+                                                 match=match,
+                                                 instructions=inst)
+                datapath.send_msg(flow_mod)
+
                 match = parser.OFPMatch(eth_dst=entry.hw_addr)
                 actions = [parser.OFPActionOutput(entry.port.number)]
-                flows.append((datapath, match, actions))
+                inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+                                                     actions)]
+                if entry.floating:
+                    cookie = MikeOpenflowController.hook_remove_flow(self.uuid_object.uuid)
+                    self._cookies_removed_flow[cookie] = entry
+                    flow_mod = parser.OFPFlowMod(datapath=datapath,
+                                                 command=command,
+                                                 priority=SERVICE_HUB_PRIORITY,
+                                                 cookie=cookie,
+                                                 table_id=self.DST_TABLE,
+                                                 match=match,
+                                                 idle_timeout=SERVICE_HUB_IDLE_TIMEOUT,
+                                                 instructions=inst)
+                else:
+                    flow_mod = parser.OFPFlowMod(datapath=datapath,
+                                                 command=command,
+                                                 priority=SERVICE_HUB_PRIORITY,
+                                                 table_id=self.DST_TABLE,
+                                                 match=match,
+                                                 instructions=inst)
+                datapath.send_msg(flow_mod)
             elif entry.port.switch.host_id == s.host_id:
                 '''
                 to external
@@ -190,15 +222,13 @@ class Hub(Service):
                 parser = datapath.ofproto_parser
                 match = parser.OFPMatch(eth_dst=entry.hw_addr)
                 actions = [parser.OFPActionOutput(l.number)]
-                flows.append((datapath, match, actions))
             elif entry.port.switch.host_id != s.host_id:
                 '''
                 to internal(tunneling)
                 '''
                 app.logger.info("tunnel")
-        return flows
 
-    def _generate_broadcast(self, datapath, switch):
+    def _send_broadcast_flow(self, datapath, switch, command=None):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -209,20 +239,21 @@ class Hub(Service):
                 actions.append(parser.OFPActionOutput(p.number))
         else:
             actions.append(parser.OFPActionOutput(ofproto.OFPP_FLOOD))
-        return (datapath, match, actions)
+        if not command:
+            command = ofproto.OFPFC_ADD
+        i = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=datapath,
+                                priority=SERVICE_HUB_PRIORITY,
+                                command=command,
+                                table_id=self.DST_TABLE,
+                                match=match,
+                                instructions=i)
+        datapath.send_msg(mod)
 
     def add_port(self, ev, port, app):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-        flow = self._generate_broadcast(datapath, port.switch)
-        i = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, flow[2])]
-        mod = parser.OFPFlowMod(datapath=datapath,
-                                priority=SERVICE_HUB_PRIORITY,
-                                command=ofproto.OFPFC_MODIFY,
-                                match=flow[1],
-                                instructions=i)
-        datapath.send_msg(mod)
+        self._send_broadcast_flow(datapath, port.switch, ofproto.OFPFC_MODIFY)
         # TODO: flowの追加
 
     def delete_port(self, ev, port, app):
@@ -247,29 +278,33 @@ class Hub(Service):
         old_flows.delete()
 
         datapath = ev.msg.datapath
-        cookie = MikeOpenflowController.hook_packet_in(self.uuid_object.uuid)
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+
         match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        inst = [parser.OFPInstructionGotoTable(self.SRC_TABLE)]
         mod = parser.OFPFlowMod(datapath=datapath,
                                 priority=SERVICE_HUB_PACKET_IN_PRIORITY,
-                                cookie=cookie,
                                 command=ofproto.OFPFC_ADD,
                                 match=match,
                                 instructions=inst)
         datapath.send_msg(mod)
 
-        flow = self._generate_broadcast(datapath, switch)
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, flow[2])]
+        cookie = MikeOpenflowController.hook_packet_in(self.uuid_object.uuid)
+        match = parser.OFPMatch()
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                          ofproto.OFPCML_NO_BUFFER)]
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=datapath,
-                                priority=SERVICE_HUB_PRIORITY,
+                                priority=SERVICE_HUB_PACKET_IN_PRIORITY-1000,
+                                cookie=cookie,
                                 command=ofproto.OFPFC_ADD,
-                                match=flow[1],
+                                table_id=self.SRC_TABLE,
+                                match=match,
                                 instructions=inst)
         datapath.send_msg(mod)
+
+        self._send_broadcast_flow(datapath, switch)
 
         self._update_all(app)
 
@@ -282,21 +317,26 @@ class Hub(Service):
         src_hwaddr = eth.src
         dst_hwaddr = eth.dst
 
-        p = Port.objects.filter(number=in_port,
-                                switch__datapath_id=ev.msg.datapath.id)[0]
-        self.learn(p, src_hwaddr, app)
+        port = Port.objects.filter(number=in_port,
+                                   switch__datapath_id=ev.msg.datapath.id)[0]
+        self.learn(port, src_hwaddr, app)
 
         datapath = ev.msg.datapath
+        ofproto = datapath.ofproto
         entry = self.objects.filter(hw_addr=dst_hwaddr)
-        if not entry:
-            return  # debug
-            raise Exception('does not hub entry')
-        out_port = entry[0].port.number
+        if entry:
+            actions = [datapath.ofproto_parser.OFPActionOutput(entry[0].port.number)]
+        else:
+            if port.switch.type == 'ex':
+                actions = []
+                for p in port.switch.ports:
+                    actions.append(datapath.ofproto_parser.OFPActionOutput(p.number))
+            else:
+                actions = [datapath.ofproto_parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
 
         # from IPython.core.debugger import Pdb
         # Pdb(color_scheme='Linux').set_trace()
 
-        actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
         data = None
         if ev.msg.buffer_id == datapath.ofproto.OFP_NO_BUFFER:
             data = ev.msg.data
