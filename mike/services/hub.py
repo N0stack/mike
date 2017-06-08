@@ -54,14 +54,14 @@ class Hub(Service):
 
     SRC_TABLE = 1
     DST_TABLE = 2
-    META_DATA_MASK = 0xffffffffffffffff
+    METADATA_MASK = 0xffffffffffffffff
 
     _cookies_removed_flow = {}
 
     def __init__(self, uuid=None):
         super(Hub, self).__init__(uuid)
         self.objects = ServiceHubTable.objects.filter(hub=self.uuid_object)
-        self.meta_data = 1  # TODO: hub1つにつき自動生成
+        self.metadata = 1  # TODO: hub1つにつき自動生成
 
     def _update_all(self, ryu_app):
         entries = self.objects.all()
@@ -159,7 +159,7 @@ class Hub(Service):
                 actions = [parser.OFPActionOutput(entry.port.number)]
                 inst = [parser.OFPInstructionActions(ofproto.OFPIT_WRITE_ACTIONS,
                                                      actions),
-                        parser.OFPInstructionWriteMetadata(self.meta_data),
+                        parser.OFPInstructionWriteMetadata(self.metadata, self.METADATA_MASK),
                         parser.OFPInstructionGotoTable(self.DST_TABLE)]
                 if entry.floating:
                     cookie = MikeOpenflowController.hook_remove_flow(self.uuid_object.uuid)
@@ -181,7 +181,7 @@ class Hub(Service):
                                                  instructions=inst)
                 datapath.send_msg(flow_mod)
 
-                match = parser.OFPMatch(eth_dst=entry.hw_addr)
+                match = parser.OFPMatch(eth_dst=entry.hw_addr, metadata=self.metadata)
                 actions = [parser.OFPActionOutput(entry.port.number)]
                 inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                                      actions)]
