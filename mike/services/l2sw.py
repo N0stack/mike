@@ -1,16 +1,12 @@
-from ryu.app.ofctl.api import get_datapath
 from django.db import models
 
 from mike.controller.openflow import MikeOpenflowController
 from mike.services.service import Service
-from mike.services.service import Hub
-from mike.lib.objects.switch import Switch
-from mike.lib.objects.link import Link
-from mike.lib.objects.host import Host
+from mike.services.hub import Hub
 
 
 SERVICE_L2SW_PRIORITY = 20001  # Layer 2
-SERVICE_L2SW_PACKETIN_PRIORITY = 2001  # Layer 2
+SERVICE_L2SW_PACKET_IN_PRIORITY = 2001  # Layer 2
 
 
 class ServiceL2swTable(models.Model):
@@ -30,7 +26,7 @@ class L2sw(Service):
     support:
       - internal to internal
       - internal to external
-      - internal to internal of otherhost (tunneling)
+      - internal to internal of otherport (tunneling)
       - external to internal
       - external to external
     '''
@@ -61,13 +57,13 @@ class L2sw(Service):
         Hub(network[0].hub.uuid).delete()
         network[0].delete()
 
-    def add_host(self, ev, host, app):
+    def add_port(self, ev, port, app):
         pass
 
-    def delete_host(self, ev, host, app):
+    def delete_port(self, ev, port, app):
         pass
 
-    def modify_host(self, ev, host, app):
+    def modify_port(self, ev, port, app):
         pass
 
     def add_link(self, ev, link, app):
@@ -79,46 +75,43 @@ class L2sw(Service):
     def modify_link(self, ev, link, app):
         pass
 
-    def add_switch(self, switch):
-        switch.services.add(self.uuid_object)
-
-    def delete_switch(self, switch):
-        switch.services.remove(self.uuid_object)
-
     cookies = {}
     '''
     cookies[cookie] = vlan_id
     '''
 
-    def packet_in(self, ev, app):
-        vlan_id = self.cookies[ev.msg.cookie]
-        network = self.objects.filter(vlan_id=vlan_id)
-
-        network.hub.packet_in(ev, app)
-
-    def reinit_ports(self, ev, switch, app):
+    def init_ports(self, ev, switch, app):
         if not switch.type == 'ex':
             return
         # send CONTROLLER
         for network in self.objects.all():
-            network.hub.reinit_ports(ev, switch, app)
+            cookie = MikeOpenflowController.hook_packet_in(self.uuid_object.uuid)
+            self.cookies[cookie] = network.hub.uuid_object.uuid
 
-            cookie = MikeOpenflowController.add_packet_in_hook(self.uuid_object.uuid)
-            self.cookies[cookie] = network.vlan_id
+            datapath = ev.dp
+            ofproto = datapath.ofproto
+            parser = datapath.ofproto_parser
 
-            ofproto = ev.dp.ofproto
-            parser = ev.dp.ofproto_parser
             match = parser.OFPMatch(vlan_vid=(0x1000 | network.vlan_id))
+            inst = [parser.OFPInstructionGotoTable(network.hub.SRC_TABLE),
+                    parser.OFPInstructionWriteMetadata(network.hub.metadata, network.hub.METADATA_MASK)]
+            mod = parser.OFPFlowMod(datapath=datapath,
+                                    priority=SERVICE_L2SW_PACKET_IN_PRIORITY,
+                                    command=ofproto.OFPFC_ADD,
+                                    match=match,
+                                    instructions=inst)
+            datapath.send_msg(mod)
+
             actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                               ofproto.OFPCML_NO_BUFFER)]
             i = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
-            mod = parser.OFPFlowMod(datapath=ev.dp,
-                                    priority=SERVICE_L2SW_PACKETIN_PRIORITY,
+            mod = parser.OFPFlowMod(datapath=datapath,
+                                    priority=SERVICE_L2SW_PACKET_IN_PRIORITY,
                                     cookie=cookie,
                                     table_id=0,
                                     match=match,
                                     instructions=i)
-            ev.dp.send_msg(mod)
+            datapath.send_msg(mod)
 
     def delete(self):
         pass
