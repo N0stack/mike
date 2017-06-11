@@ -61,29 +61,29 @@ class TestPorts(TestCase):
         # no name port
         ports_uuids.append(Ports.add(number=1,
                                      switch=self.switch,
-                                     mac_addr="10:00:00:00:00:01"))
+                                     hw_addr="10:00:00:00:00:01"))
         # no ip address port
         ports_uuids.append(Ports.add(number=2,
                                      name="veth0",
                                      switch=self.switch,
-                                     mac_addr="10:00:00:00:00:02"))
+                                     hw_addr="10:00:00:00:00:02"))
         # same mac address port
         ports_uuids.append(Ports.add(number=3,
                                      name="veth1",
                                      switch=self.switch,
-                                     mac_addr="10:00:00:00:00:02"))
+                                     hw_addr="10:00:00:00:00:02"))
         # ip address port
         ports_uuids.append(Ports.add(number=4,
                                      name="veth2",
                                      switch=self.switch,
-                                     mac_addr="10:00:00:00:00:03",
+                                     hw_addr="10:00:00:00:00:03",
                                      ipv4_addr="192.168.0.1",
                                      ipv4_subnetmask="255.255.255.0"))
         # same ip address port
         ports_uuids.append(Ports.add(number=5,
                                      name="veth3",
                                      switch=self.switch,
-                                     mac_addr="10:00:00:00:00:04",
+                                     hw_addr="10:00:00:00:00:04",
                                      ipv4_addr="192.168.0.1",
                                      ipv4_subnetmask="255.255.255.0"))
         sw2_uuid = Switches.add(name="test_sw2",
@@ -94,7 +94,7 @@ class TestPorts(TestCase):
         ports_uuids.append(Ports.add(number=5,
                                      name="veth3",
                                      switch=sw2,
-                                     mac_addr="10:00:00:00:00:04",
+                                     hw_addr="10:00:00:00:00:04",
                                      ipv4_addr="192.168.0.1",
                                      ipv4_subnetmask="255.255.255.0"))
 
@@ -102,42 +102,42 @@ class TestPorts(TestCase):
         eq_(p.number, 1)
         eq_(p.name, "")
         eq_(p.switch, self.switch)
-        eq_(p.mac_addr, "10:00:00:00:00:01")
+        eq_(p.hw_addr, "10:00:00:00:00:01")
         eq_(p.ipv4_addr, "")
         eq_(p.ipv4_subnetmask, "")
         p = Ports.get_from_uuids([ports_uuids[1]])[0]
         eq_(p.number, 2)
         eq_(p.name, "veth0")
         eq_(p.switch, self.switch)
-        eq_(p.mac_addr, "10:00:00:00:00:02")
+        eq_(p.hw_addr, "10:00:00:00:00:02")
         eq_(p.ipv4_addr, "")
         eq_(p.ipv4_subnetmask, "")
         p = Ports.get_from_uuids([ports_uuids[2]])[0]
         eq_(p.number, 3)
         eq_(p.name, "veth1")
         eq_(p.switch, self.switch)
-        eq_(p.mac_addr, "10:00:00:00:00:02")
+        eq_(p.hw_addr, "10:00:00:00:00:02")
         eq_(p.ipv4_addr, "")
         eq_(p.ipv4_subnetmask, "")
         p = Ports.get_from_uuids([ports_uuids[3]])[0]
         eq_(p.number, 4)
         eq_(p.name, "veth2")
         eq_(p.switch, self.switch)
-        eq_(p.mac_addr, "10:00:00:00:00:03")
+        eq_(p.hw_addr, "10:00:00:00:00:03")
         eq_(p.ipv4_addr, "192.168.0.1")
         eq_(p.ipv4_subnetmask, "255.255.255.0")
         p = Ports.get_from_uuids([ports_uuids[4]])[0]
         eq_(p.number, 5)
         eq_(p.name, "veth3")
         eq_(p.switch, self.switch)
-        eq_(p.mac_addr, "10:00:00:00:00:04")
+        eq_(p.hw_addr, "10:00:00:00:00:04")
         eq_(p.ipv4_addr, "192.168.0.1")
         eq_(p.ipv4_subnetmask, "255.255.255.0")
         p = Ports.get_from_uuids([ports_uuids[5]])[0]
         eq_(p.number, 5)
         eq_(p.name, "veth3")
         eq_(p.switch, sw2)
-        eq_(p.mac_addr, "10:00:00:00:00:04")
+        eq_(p.hw_addr, "10:00:00:00:00:04")
         eq_(p.ipv4_addr, "192.168.0.1")
         eq_(p.ipv4_subnetmask, "255.255.255.0")
 
@@ -154,24 +154,24 @@ class TestPorts(TestCase):
     def test_add_exists_ports(self):
         Ports.add(number=1,
                   switch=self.switch,
-                  mac_addr="10:00:00:00:00:01")
+                  hw_addr="10:00:00:00:00:01")
         Ports.add(number=1,
                   switch=self.switch,
-                  mac_addr="10:00:00:00:00:01")
+                  hw_addr="10:00:00:00:00:01")
 
     @raises(Exception)
     def test_add_ports_invalid_args(self):
         Ports.add(number=1,
                   name="veth1",
                   switch=self.switch,
-                  mac_addr="10:00:00:00:00:01",
+                  hw_addr="10:00:00:00:00:01",
                   ipv4_addr="192.168.0.1")
 
     @raises(Exception)
     def test_add_ports_invalid_args_no_name(self):
         Ports.add(number=1,
                   switch=self.switch,
-                  mac_addr="10:00:00:00:00:01",
+                  hw_addr="10:00:00:00:00:01",
                   ipv4_addr="192.168.0.1")
 
     @raises(Exception)
@@ -179,12 +179,12 @@ class TestPorts(TestCase):
         Ports.add(number=1,
                   name="veth1",
                   switch=self.switch,
-                  mac_addr="10:00:00:00:00:01",
+                  hw_addr="10:00:00:00:00:01",
                   ipv4_subnetmask="255.255.255.0")
 
     @raises(Exception)
     def test_add_ports_invalid_args_no_name_subnet(self):
         Ports.add(number=1,
                   switch=self.switch,
-                  mac_addr="10:00:00:00:00:01",
+                  hw_addr="10:00:00:00:00:01",
                   ipv4_subnetmask="255.255.255.0")
