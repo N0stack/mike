@@ -120,11 +120,10 @@ class Hub(Service):
                 myself
                 TODO: refactoring
                 '''
-                match = parser.OFPMatch(eth_src=entry.hw_addr)
+                match = parser.OFPMatch(eth_src=entry.hw_addr, metadata=self.metadata)
                 actions = [parser.OFPActionOutput(entry.port.number)]
                 inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                                      actions),
-                        parser.OFPInstructionWriteMetadata(self.metadata, self.METADATA_MASK),
                         parser.OFPInstructionGotoTable(self.DST_TABLE)]
                 if entry.floating:
                     cookie = MikeOpenflowController.hook_remove_flow(self.uuid_object.uuid)
@@ -188,11 +187,10 @@ class Hub(Service):
                 ofproto = datapath.ofproto
                 parser = datapath.ofproto_parser
 
-                match = parser.OFPMatch(eth_src=entry.hw_addr)
+                match = parser.OFPMatch(eth_src=entry.hw_addr, metadata=self.metadata)
                 actions = [parser.OFPActionOutput(entry.port.number)]
                 inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                                      actions),
-                        parser.OFPInstructionWriteMetadata(self.metadata, self.METADATA_MASK),
                         parser.OFPInstructionGotoTable(self.DST_TABLE)]
                 if entry.floating:
                     cookie = MikeOpenflowController.hook_remove_flow(self.uuid_object.uuid)
@@ -304,7 +302,8 @@ class Hub(Service):
         parser = datapath.ofproto_parser
 
         match = parser.OFPMatch()
-        inst = [parser.OFPInstructionGotoTable(self.SRC_TABLE)]
+        inst = [parser.OFPInstructionGotoTable(self.SRC_TABLE),
+                parser.OFPInstructionWriteMetadata(self.metadata, self.METADATA_MASK)]
         mod = parser.OFPFlowMod(datapath=datapath,
                                 priority=SERVICE_HUB_PACKET_IN_PRIORITY,
                                 command=ofproto.OFPFC_ADD,
