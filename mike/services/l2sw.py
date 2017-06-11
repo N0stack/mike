@@ -93,8 +93,8 @@ class L2sw(Service):
             parser = datapath.ofproto_parser
 
             match = parser.OFPMatch(vlan_vid=(0x1000 | network.vlan_id))
-            inst = [parser.OFPInstructionGotoTable(network.hub.SRC_TABLE),
-                    parser.OFPInstructionWriteMetadata(network.hub.metadata, network.hub.METADATA_MASK)]
+            inst = [parser.OFPInstructionWriteMetadata(network.hub.metadata, network.hub.METADATA_MASK),
+                    parser.OFPInstructionGotoTable(network.hub.SRC_TABLE)]
             mod = parser.OFPFlowMod(datapath=datapath,
                                     priority=SERVICE_L2SW_PACKET_IN_PRIORITY,
                                     command=ofproto.OFPFC_ADD,
